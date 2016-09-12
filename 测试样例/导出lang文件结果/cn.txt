@@ -1,0 +1,4 @@
+goodbye:再见
+hello:你好
+sorry:对不起
+evolve:进化了

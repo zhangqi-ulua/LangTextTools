@@ -1,0 +1,4 @@
+goodbye:goodbye
+hello:hello
+sorry:sorry
+evolve:evolve

@@ -1,0 +1,4 @@
+goodbye:Au revoir
+hello:bonjour
+sorry:pardon！
+evolve:évolution
