@@ -443,18 +443,26 @@ namespace LangTextTools
                             // 如果选择了一并导出、提交主语言对应的lang文件
                             if (!AppValues.COMMIT_LANG_FILE_OPTINOS[0].Equals(cmbCommitLangFile.SelectedItem.ToString()))
                             {
-                                // 进行lang文件导出
                                 // 解析Excel母表
                                 LangExcelInfo langExcelInfo = AnalyzeHelper.AnalyzeLangExcelFile(AppValues.LocalExcelFilePath, AppValues.CommentLineStartChar, out errorString);
                                 if (errorString == null)
                                 {
-                                    if (ExportLangFileHelper.ExportLangFile(langExcelInfo, langExcelInfo.DefaultLanguageInfo.Name, exportLangFilePath, keyAndValueSplitChar, out errorString) == true)
+                                    // 进行lang文件导出（注意：如果选择的是导出lang文件并上传SVN，因为上传前必须先进行Revert和Update操作，如果将lang文件导出到Working Copy路径，就会导致最新导出的lang文件被覆盖）
+                                    string tempExportLangFilePath = null;
+                                    if (AppValues.COMMIT_LANG_FILE_OPTINOS[1].Equals(cmbCommitLangFile.SelectedItem.ToString()))
+                                        tempExportLangFilePath = exportLangFilePath;
+                                    else
+                                    {
+                                        string langFileExtension = Path.GetExtension(exportLangFilePath);
+                                        tempExportLangFilePath = Utils.CombinePath(AppValues.PROGRAM_FOLDER_PATH, string.Format("提交后的母表导出的主语言对应的lang文件 {0:yyyy年MM月dd日 HH时mm分ss秒}{1}", DateTime.Now, langFileExtension));
+                                    }
+                                    if (ExportLangFileHelper.ExportLangFile(langExcelInfo, langExcelInfo.DefaultLanguageInfo.Name, tempExportLangFilePath, keyAndValueSplitChar, out errorString) == true)
                                     {
                                         // 提交lang文件
                                         if (AppValues.COMMIT_LANG_FILE_OPTINOS[2].Equals(cmbCommitLangFile.SelectedItem.ToString()))
                                         {
                                             // 先执行Revert和Update操作
-                                            string exportLangFileSuccessTips = string.Format("导出主语言对应的lang文件成功，导出路径为：{0}\n\n", exportLangFilePath);
+                                            string exportLangFileSuccessTips = string.Format("导出主语言对应的lang文件成功，导出路径为：{0}\n\n", tempExportLangFilePath);
                                             bool revertResult = OperateSvnHelper.Revert(exportLangFilePath, out svnException);
                                             if (svnException == null)
                                             {
@@ -481,6 +489,16 @@ namespace LangTextTools
                                             else
                                             {
                                                 MessageBox.Show(string.Format("{0}{1}但提交至SVN失败，因为对Working Copy中的lang文件执行Update失败，错误原因为：{2}", commitExcelFileSuccessTips, exportLangFileSuccessTips, svnException.Message), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                return;
+                                            }
+                                            // 将导出的lang文件覆盖到Working Copy路径
+                                            try
+                                            {
+                                                File.Copy(tempExportLangFilePath, exportLangFilePath, true);
+                                            }
+                                            catch
+                                            {
+                                                MessageBox.Show(string.Format("{0}{1}但将导出的lang文件拷贝到Working Copy路径失败，提交至SVN的操作被迫中止", commitExcelFileSuccessTips, exportLangFileSuccessTips), "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
                                                 return;
                                             }
                                             // 执行提交操作
