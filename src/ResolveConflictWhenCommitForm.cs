@@ -115,7 +115,7 @@ namespace LangTextTools
         {
             // 检查本地表是否发生变动
             string newExcelMD5 = Utils.GetFileMD5(AppValues.LocalExcelFilePath);
-            if (newExcelMD5 != null && !newExcelMD5.Equals(AppValues.ExcelMD5))
+            if (newExcelMD5 != null && !newExcelMD5.Equals(AppValues.LocalExcelMD5))
             {
                 MessageBox.Show("检测到目前选择的本地表文件与点击“检查”按钮时内容已发生变动，请重新点击“检查”按钮读取最新的本地表内容", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Close();
