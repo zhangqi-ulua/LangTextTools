@@ -671,7 +671,7 @@
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "国际化文本工具 1.0   by 张齐";
+            this.Text = "国际化文本工具 1.5   by 张齐";
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.grpExportLangFile.ResumeLayout(false);
             this.grpExportLangFile.PerformLayout();

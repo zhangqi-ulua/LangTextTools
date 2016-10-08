@@ -13,6 +13,7 @@ public class CommitExcelFileHelper
     public static CommitExcelInfo AnalyzeCommitExcelFile(string filePath, string commentLineStartChar, long revision, out string errorString)
     {
         CommitExcelInfo commitExcelInfo = new CommitExcelInfo();
+        commitExcelInfo.FilePath = filePath;
         commitExcelInfo.Revision = revision;
 
         DataSet dataSet = XlsxReader.ReadXlsxFileByOleDb(filePath, out errorString);
@@ -368,6 +369,61 @@ public class CommitExcelFileHelper
         errorString = null;
         return svnCopySavePath;
     }
+
+    /// <summary>
+    /// 将指定的Excel文件设置为选中指定行并在Excel打开此文件时自动将该行滚动到可见范围的第一行
+    /// </summary>
+    public static bool SetExcelVisibleRow(string filePath, int rowNum, out string errorString)
+    {
+        // 打开并编辑这个Excel文件，写入本地表中要合并进去的变动
+        Excel.Application application = new Excel.Application();
+        // 不显示Excel窗口
+        application.Visible = false;
+        // 不显示警告对话框
+        application.DisplayAlerts = false;
+        // 禁止屏幕刷新
+        application.ScreenUpdating = false;
+        // 编辑非空单元格时不进行警告提示
+        application.AlertBeforeOverwriting = false;
+        // 打开Excel工作簿
+        Excel.Workbook workbook = application.Workbooks.Open(filePath);
+        // 找到名为data的Sheet表
+        Excel.Worksheet dataWorksheet = null;
+        int sheetCount = workbook.Sheets.Count;
+        string DATA_SHEET_NAME = AppValues.EXCEL_DATA_SHEET_NAME.Replace("$", "");
+        for (int i = 1; i <= sheetCount; ++i)
+        {
+            Excel.Worksheet sheet = workbook.Sheets[i] as Excel.Worksheet;
+            if (sheet.Name.Equals(DATA_SHEET_NAME))
+            {
+                dataWorksheet = sheet;
+                break;
+            }
+        }
+        if (dataWorksheet == null)
+        {
+            errorString = string.Format("{0}中找不到Sheet名为{1}的数据表", AppValues.ExcelFullPath, DATA_SHEET_NAME);
+            return false;
+        }
+        // 将data表激活
+        dataWorksheet.Activate();
+        // 选中指定行
+        dataWorksheet.get_Range("A" + rowNum).EntireRow.Select();
+        // 使Excel打开此文件时自动将该行滚动到可见范围的第一行
+        application.ActiveWindow.ScrollRow = rowNum;
+
+        // 保存Excel
+        dataWorksheet.SaveAs(filePath);
+        workbook.SaveAs(filePath);
+        // 关闭Excel
+        workbook.Close(false);
+        application.Workbooks.Close();
+        application.Quit();
+        Utils.KillExcelProcess(application);
+
+        errorString = null;
+        return true;
+    }
 }
 
 /// <summary>
@@ -385,6 +441,8 @@ public class CommitExcelInfo
     public long Revision { get; set; }
     // 主语言列的列号（从1开始编号）
     public int DataColumnIndex { get; set; }
+    // 文件路径
+    public string FilePath { get; set; }
 
     public CommitExcelInfo()
     {

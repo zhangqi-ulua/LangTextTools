@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Office.Interop.Excel;
 using Excel = Microsoft.Office.Interop.Excel;
+using System.Security.Cryptography;
 
 public class Utils
 {
@@ -55,6 +56,28 @@ public class Utils
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// 计算指定文件的MD5
+    /// </summary>
+    public static string GetFileMD5(string filePath)
+    {
+        if (File.Exists(filePath))
+        {
+            FileStream fileStream = new FileStream(filePath, FileMode.Open);
+            MD5 md5 = new MD5CryptoServiceProvider();
+            byte[] buffer = md5.ComputeHash(fileStream);
+            fileStream.Close();
+            StringBuilder stringBuilder = new StringBuilder();
+            int bufferLength = buffer.Length;
+            for (int i = 0; i < bufferLength; ++i)
+                stringBuilder.Append(buffer[i].ToString("x2"));
+
+            return stringBuilder.ToString();
+        }
+        else
+            return null;
     }
 
     /// <summary>

@@ -8,7 +8,7 @@ using System.Text;
 /// </summary>
 public class ExportLangFileHelper
 {
-    public static bool ExportLangFile(string languageName, string savePath, out string errorString)
+    public static bool ExportLangFile(LangExcelInfo langExcelInfo, string languageName, string savePath, string keyAndValueSplitChar, out string errorString)
     {
         // 检查输入的路径是否合法
         string fullPath = null;
@@ -47,8 +47,8 @@ public class ExportLangFileHelper
         // 记录要写入lang文件的内容
         StringBuilder langFileContent = new StringBuilder();
 
-        List<string> keys = AppValues.LangExcelInfo.Keys;
-        List<string> translatedText = AppValues.LangExcelInfo.GetLanguageInfoByLanguageName(languageName).Data;
+        List<string> keys = langExcelInfo.Keys;
+        List<string> translatedText = langExcelInfo.GetLanguageInfoByLanguageName(languageName).Data;
         int keyCount = keys.Count;
         for (int i = 0; i < keyCount; ++i)
         {
@@ -70,7 +70,7 @@ public class ExportLangFileHelper
                 break;
             }
             else
-                langFileContent.AppendLine(string.Concat(keys[i], AppValues.KeyAndValueSplitChar, translatedText[i]));
+                langFileContent.AppendLine(string.Concat(keys[i], keyAndValueSplitChar, translatedText[i]));
         }
 
         if (untranslatedDataIndex.Count > 0)

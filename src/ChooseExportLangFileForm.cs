@@ -76,14 +76,29 @@ namespace LangTextTools
                 this.Controls.Add(btnExport);
             }
 
-            // 如果选择的是导出lang文件到统一路径，自动填写好导出路径以及文件名
+            // 如果选择的是导出lang文件到统一路径，自动填写好导出路径以及文件名（但如果配置文件中含有某语种默认导出路径，则优先使用配置）
             if (_isExportUnifiedDir == true)
             {
                 foreach (LanguageInfo info in _languageInfoList)
                 {
                     string textBoxName = string.Concat(_TEXTBOX_NAME_START_STRING, info.Name);
                     TextBox txt = this.Controls[textBoxName] as TextBox;
-                    txt.Text = Path.Combine(AppValues.ExportLangFileUnifiedDir, string.Concat(info.Name, ".", AppValues.LangFileExtension));
+                    string configKeyName = AppValues.CONFIG_KEY_EXPORT_LANG_FILE_START_STRING + info.Name;
+                    if (AppValues.Config.ContainsKey(configKeyName))
+                        txt.Text = AppValues.Config[configKeyName];
+                    else
+                        txt.Text = Path.Combine(AppValues.ExportLangFileUnifiedDir, string.Concat(info.Name, ".", AppValues.LangFileExtension));
+                }
+            }
+            else
+            {
+                foreach (LanguageInfo info in _languageInfoList)
+                {
+                    string textBoxName = string.Concat(_TEXTBOX_NAME_START_STRING, info.Name);
+                    TextBox txt = this.Controls[textBoxName] as TextBox;
+                    string configKeyName = AppValues.CONFIG_KEY_EXPORT_LANG_FILE_START_STRING + info.Name;
+                    if (AppValues.Config.ContainsKey(configKeyName))
+                        txt.Text = AppValues.Config[configKeyName];
                 }
             }
         }
@@ -101,28 +116,18 @@ namespace LangTextTools
             }
         }
 
-        // 各语种“选择”按钮通用的点击事件响应函数
-        private void _HandleExportButtonClicked(object sender, EventArgs e)
-        {
-            Button btn = sender as Button;
-            string languageName = btn.Name.Substring(_BUTTON_NAME_START_STRING.Length);
-            string textBoxName = string.Concat(_TEXTBOX_NAME_START_STRING, languageName);
-            TextBox txt = this.Controls[textBoxName] as TextBox;
-            SaveFileDialog dialog = new SaveFileDialog();
-            dialog.ValidateNames = true;
-            dialog.Title = string.Format("请选择{0}语种对应的lang文件保存路径", languageName);
-            dialog.Filter = string.Format("Lang files (*.{0})|*.{0}", AppValues.LangFileExtension);
-            dialog.FileName = languageName;
-            if (_isExportUnifiedDir == true)
-                dialog.InitialDirectory = AppValues.ExportLangFileUnifiedDir;
-
-            if (dialog.ShowDialog() == DialogResult.OK)
-                txt.Text = dialog.FileName;
-        }
-
         // 点击“导出”按钮
         private void btnExport_Click(object sender, EventArgs e)
         {
+            // 检查母表文件是否发生变动
+            string newExcelMD5 = Utils.GetFileMD5(AppValues.ExcelFullPath);
+            if (newExcelMD5 != null && !newExcelMD5.Equals(AppValues.ExcelMD5))
+            {
+                MessageBox.Show("检测到目前选择的母表文件与点击“打开”按钮时内容已发生变动，请重新点击“打开”按钮读取最新的母表内容", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Close();
+                return;
+            }
+
             // 用于记录写入log文件的内容
             StringBuilder logStringBuilder = new StringBuilder();
             // 每个语种是否导出成功（key：语种名称，value：是否导出成功）
@@ -144,7 +149,7 @@ namespace LangTextTools
                     logStringBuilder.AppendFormat("导出路径：{0}", savePath).AppendLine();
 
                     string errorString = null;
-                    if (ExportLangFileHelper.ExportLangFile(info.Name, savePath, out errorString) == true)
+                    if (ExportLangFileHelper.ExportLangFile(AppValues.LangExcelInfo, info.Name, savePath, AppValues.KeyAndValueSplitChar, out errorString) == true)
                     {
                         logStringBuilder.AppendLine("成功");
                         exportResult.Add(info.Name, true);
@@ -189,6 +194,25 @@ namespace LangTextTools
                 else
                     MessageBox.Show(string.Format("导出lang文件失败，生成日志文件（{0}）失败，日志信息如下：\n\n{1}", savePath, logString), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        // 各语种“选择”按钮通用的点击事件响应函数
+        private void _HandleExportButtonClicked(object sender, EventArgs e)
+        {
+            Button btn = sender as Button;
+            string languageName = btn.Name.Substring(_BUTTON_NAME_START_STRING.Length);
+            string textBoxName = string.Concat(_TEXTBOX_NAME_START_STRING, languageName);
+            TextBox txt = this.Controls[textBoxName] as TextBox;
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.ValidateNames = true;
+            dialog.Title = string.Format("请选择{0}语种对应的lang文件保存路径", languageName);
+            dialog.Filter = string.Format("Lang files (*.{0})|*.{0}", AppValues.LangFileExtension);
+            dialog.FileName = languageName;
+            if (_isExportUnifiedDir == true)
+                dialog.InitialDirectory = AppValues.ExportLangFileUnifiedDir;
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+                txt.Text = dialog.FileName;
         }
     }
 }

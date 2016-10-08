@@ -20,6 +20,10 @@ namespace LangTextTools
         private const string _RESOLVE_CONFLICT_WAY_COLUMN_NAME = "ColumnResolveConflictWay";
         // “SVN表主语言译文”列的列名后缀
         private const string _SVN_DEFAULT_LANGUAGE_COLUMN_NAME = "ColumnSvnDefaultLanguage";
+        // “本地表行号”列的列名后缀
+        private const string _LOCAL_LINE_NUM_COLUMN_NAME = "ColumnLocalLineNum";
+        // “SVN表行号”列的列名后缀
+        private const string _SVN_LINE_NUM_COLUMN_NAME = "ColumnSvnLineNum";
 
         // 各对比类型功能区的名称
         const string _PART_NAME_DIFF_INFO = "DiffInfo";
@@ -43,6 +47,10 @@ namespace LangTextTools
         public ResolveConflictWhenCommitForm(CommitCompareResult compareResult, CommitExcelInfo localExcelInfo, CommitExcelInfo svnExcelInfo)
         {
             InitializeComponent();
+
+            // 初始化用于选择提交时是否已经导出提交主语言对应lang文件的ComboBox选项
+            cmbCommitLangFile.Items.AddRange(AppValues.COMMIT_LANG_FILE_OPTINOS);
+            cmbCommitLangFile.SelectedItem = AppValues.COMMIT_LANG_FILE_OPTINOS[0];
 
             // 记录各对比类型功能区所包含的控件
             _partControls = new Dictionary<string, _PartControls>();
@@ -68,20 +76,20 @@ namespace LangTextTools
             svnAddKeyPartControls.CheckBox = chkSvnAddKeyInfoIgnoreSvnRevisionChange;
             _partControls.Add(_PART_NAME_SVN_ADD_KEY, svnAddKeyPartControls);
 
-            // 设置用于统一处理差异处理方式的ComboBox选项
             foreach (_PartControls onePartControls in _partControls.Values)
             {
+                // 统一设置DataGridView中双击单元格的响应事件
+                onePartControls.DataGridView.CellDoubleClick += _OnCellDoubleClick;
+
+                // 设置用于统一处理差异处理方式的ComboBox选项
                 // 设置选项内容
-                onePartControls.ComboBox.Items.AddRange(AppValues.RESOLVE_COMMIT_DIFF_WAYS);
+                onePartControls.ComboBox.Items.AddRange(AppValues.RESOLVE_COMMIT_DIFF_OPTINOS);
                 // 绑定点击响应事件
                 onePartControls.ComboBox.SelectedIndexChanged += _OnChangedUnifiedResolveConflictWay;
-            }
 
-            // 设置用于让用户选择每条差异处理方式的DataGridViewComboBoxColumn选项
-            foreach (_PartControls onePartControls in _partControls.Values)
-            {
+                // 设置用于让用户选择每条差异处理方式的DataGridViewComboBoxColumn选项
                 DataGridViewComboBoxColumn comboBoxColumn = onePartControls.DataGridView.Columns[onePartControls.PartName + _RESOLVE_CONFLICT_WAY_COLUMN_NAME] as DataGridViewComboBoxColumn;
-                comboBoxColumn.Items.AddRange(AppValues.RESOLVE_COMMIT_DIFF_WAYS);
+                comboBoxColumn.Items.AddRange(AppValues.RESOLVE_COMMIT_DIFF_OPTINOS);
             }
 
             _localExcelInfo = localExcelInfo;
@@ -91,15 +99,146 @@ namespace LangTextTools
             _InitDataGridView(compareResult);
         }
 
+        private void ResolveConflictWhenCommitForm_Load(object sender, EventArgs e)
+        {
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_COMMIT_LOG_MESSAGE))
+                txtCommitLogMessage.Text = AppValues.Config[AppValues.CONFIG_KEY_COMMIT_LOG_MESSAGE];
+            // Key与Value的分隔符为一个字符，优先使用主界面中lang文件导出功能设置的分隔符，其次使用配置文件的设置
+            if (AppValues.KeyAndValueSplitChar != null)
+                txtKeyValueSplitChar.Text = AppValues.KeyAndValueSplitChar;
+            else if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_KEY_VALUE_SPLIT_CHAR))
+                txtKeyValueSplitChar.Text = AppValues.Config[AppValues.CONFIG_KEY_KEY_VALUE_SPLIT_CHAR][0].ToString();
+        }
+
         // 点击“提交”按钮
         private void btnCommit_Click(object sender, EventArgs e)
         {
+            // 检查本地表是否发生变动
+            string newExcelMD5 = Utils.GetFileMD5(AppValues.LocalExcelFilePath);
+            if (newExcelMD5 != null && !newExcelMD5.Equals(AppValues.ExcelMD5))
+            {
+                MessageBox.Show("检测到目前选择的本地表文件与点击“检查”按钮时内容已发生变动，请重新点击“检查”按钮读取最新的本地表内容", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Close();
+                return;
+            }
+
             // 判断是否填写了提交所需的LogMessage信息
             string logMessage = txtCommitLogMessage.Text.Trim();
             if (string.IsNullOrEmpty(logMessage))
             {
                 MessageBox.Show("执行SVN提交操作时必须填写说明信息", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
+            }
+
+            // 如果用户选择了一并导出、提交主语言对应的lang文件，需要检查配置文件中是否已设置路径，若没有需要用户手工指定
+            string exportLangFilePath = null;
+            string keyAndValueSplitChar = null;
+            if (!AppValues.COMMIT_LANG_FILE_OPTINOS[0].Equals(cmbCommitLangFile.SelectedItem.ToString()))
+            {
+                // 检查是否输入了Key与Value的分隔字符
+                keyAndValueSplitChar = txtKeyValueSplitChar.Text;
+                if (string.IsNullOrEmpty(keyAndValueSplitChar))
+                {
+                    MessageBox.Show("必须输入导出lang文件中Key、Value的分隔字符", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+            }
+            if (AppValues.COMMIT_LANG_FILE_OPTINOS[1].Equals(cmbCommitLangFile.SelectedItem.ToString()))
+            {
+                bool isPathCorrect = false;
+                if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH))
+                {
+                    exportLangFilePath = AppValues.Config[AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH];
+                    try
+                    {
+                        exportLangFilePath = Path.GetFullPath(exportLangFilePath);
+                        FileInfo fileInfo = new FileInfo(exportLangFilePath);
+                        if (fileInfo.Attributes != FileAttributes.Directory)
+                            isPathCorrect = true;
+                        else
+                            MessageBox.Show(string.Format("配置文件中{0}配置项所填写的主语言对应lang文件在本地Working Copy中的路径（{1}）无效，其为文件夹而不是文件，请手工选择合法路径", AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH, exportLangFilePath), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    catch
+                    {
+                        MessageBox.Show(string.Format("配置文件中{0}配置项所填写的主语言对应lang文件在本地Working Copy中的路径（{1}）无效，请手工选择合法路径", AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH, exportLangFilePath), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                else
+                    MessageBox.Show(string.Format("配置文件中不含用于配制主语言对应lang文件在本地Working Copy中的路径的配置项（{0}），请手工选择合法路径", AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                if (isPathCorrect == false)
+                {
+                    SaveFileDialog dialog = new SaveFileDialog();
+                    dialog.ValidateNames = true;
+                    dialog.Title = "请选择主语言对应lang文件的导出路径";
+                    if (dialog.ShowDialog() == DialogResult.OK)
+                        exportLangFilePath = dialog.FileName;
+                    else
+                    {
+                        MessageBox.Show("未选择主语言对应lang文件的导出路径，无法进行lang文件导出，请选择后重试", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+            }
+            else if (AppValues.COMMIT_LANG_FILE_OPTINOS[2].Equals(cmbCommitLangFile.SelectedItem.ToString()))
+            {
+                bool isPathCorrect = false;
+                if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH))
+                {
+                    exportLangFilePath = AppValues.Config[AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH];
+                    // 检查文件是否存在
+                    if (File.Exists(exportLangFilePath) == false)
+                        MessageBox.Show(string.Format("配置文件中{0}配置项所填写的主语言对应lang文件在本地Working Copy中的路径（{1}）不存在，请手工选择合法路径", AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH, exportLangFilePath), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    else
+                    {
+                        // 检查文件是否处于SVN管理下
+                        SvnException getLangFileInfoSvnException = null;
+                        SvnInfoEventArgs localFileInfo = OperateSvnHelper.GetLocalFileInfo(exportLangFilePath, out getLangFileInfoSvnException);
+                        if (getLangFileInfoSvnException != null)
+                        {
+                            if (getLangFileInfoSvnException is SvnInvalidNodeKindException)
+                                MessageBox.Show(string.Format("配置文件中{0}配置项所填写的主语言对应lang文件在本地Working Copy中的路径（{1}）不在SVN管理下，请手工选择合法路径", AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH, exportLangFilePath), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            else
+                                MessageBox.Show(string.Format("配置文件中{0}配置项所填写的主语言对应lang文件在本地Working Copy中的路径（{1}）无效，错误原因为：{2}，请手工选择合法路径", AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH, exportLangFilePath, getLangFileInfoSvnException.Message), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        else
+                            isPathCorrect = true;
+                    }
+                }
+                else
+                    MessageBox.Show(string.Format("配置文件中不含用于配制主语言对应lang文件在本地Working Copy中的路径的配置项（{0}），请手工选择合法路径", AppValues.CONFIG_KEY_COMMIT_LANG_FILE_PATH), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                if (isPathCorrect == false)
+                {
+                    SaveFileDialog dialog = new SaveFileDialog();
+                    dialog.ValidateNames = true;
+                    dialog.Title = "请选择主语言对应lang文件在本地Working Copy的路径";
+                    if (dialog.ShowDialog() == DialogResult.OK)
+                    {
+                        exportLangFilePath = dialog.FileName;
+                        // 检查文件是否处于SVN管理下
+                        SvnException getLangFileInfoSvnException = null;
+                        SvnInfoEventArgs localFileInfo = OperateSvnHelper.GetLocalFileInfo(exportLangFilePath, out getLangFileInfoSvnException);
+                        if (getLangFileInfoSvnException != null)
+                        {
+                            if (getLangFileInfoSvnException is SvnInvalidNodeKindException)
+                            {
+                                MessageBox.Show(string.Format("选择的主语言对应lang文件在本地Working Copy中的路径（{0}）不在SVN管理下，无法进行lang文件导出，请重新选择后重试", exportLangFilePath), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return;
+                            }
+                            else
+                            {
+                                MessageBox.Show(string.Format("选择的主语言对应lang文件在本地Working Copy中的路径（{0}）无效，错误原因为：{1}，请重新选择后重试", exportLangFilePath, getLangFileInfoSvnException.Message), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("未选择主语言对应lang文件在本地Working Copy中的路径，无法进行lang文件导出，请选择后重试", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
             }
 
             // 记录用户是否选择了至少一处需要合并到SVN中的差异内容
@@ -121,13 +260,13 @@ namespace LangTextTools
             {
                 CommitDifferentDefaultLanguageInfo oneDiffInfo = _compareResult.DiffInfo[i];
                 string selectedValue = _partControls[_PART_NAME_DIFF_INFO].DataGridView.Rows[i].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value as string;
-                if (AppValues.RESOLVE_COMMIT_DIFF_WAYS[0].Equals(selectedValue))
+                if (AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[0].Equals(selectedValue))
                 {
                     oneDiffInfo.ResolveConflictWay = ResolveConflictWays.UseLocal;
                     commitCompareResult.DiffInfo.Add(oneDiffInfo);
                     isChooseCommitChange = true;
                 }
-                else if (AppValues.RESOLVE_COMMIT_DIFF_WAYS[1].Equals(selectedValue))
+                else if (AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1].Equals(selectedValue))
                     oneDiffInfo.ResolveConflictWay = ResolveConflictWays.UseSvn;
                 else
                 {
@@ -143,13 +282,13 @@ namespace LangTextTools
             {
                 CommitDifferentKeyInfo oneLocalAddKey = _compareResult.LocalAddKeyInfo[i];
                 string selectedValue = _partControls[_PART_NAME_LOCAL_ADD_KEY].DataGridView.Rows[i].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value as string;
-                if (AppValues.RESOLVE_COMMIT_DIFF_WAYS[0].Equals(selectedValue))
+                if (AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[0].Equals(selectedValue))
                 {
                     oneLocalAddKey.ResolveConflictWay = ResolveConflictWays.UseLocal;
                     commitCompareResult.LocalAddKeyInfo.Add(oneLocalAddKey);
                     isChooseCommitChange = true;
                 }
-                else if (AppValues.RESOLVE_COMMIT_DIFF_WAYS[1].Equals(selectedValue))
+                else if (AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1].Equals(selectedValue))
                     oneLocalAddKey.ResolveConflictWay = ResolveConflictWays.UseSvn;
                 else
                 {
@@ -165,13 +304,13 @@ namespace LangTextTools
             {
                 CommitDifferentKeyInfo oneSvnAddKey = _compareResult.SvnAddKeyInfo[i];
                 string selectedValue = _partControls[_PART_NAME_SVN_ADD_KEY].DataGridView.Rows[i].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value as string;
-                if (AppValues.RESOLVE_COMMIT_DIFF_WAYS[0].Equals(selectedValue))
+                if (AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[0].Equals(selectedValue))
                 {
                     oneSvnAddKey.ResolveConflictWay = ResolveConflictWays.UseLocal;
                     commitCompareResult.SvnAddKeyInfo.Add(oneSvnAddKey);
                     isChooseCommitChange = true;
                 }
-                else if (AppValues.RESOLVE_COMMIT_DIFF_WAYS[1].Equals(selectedValue))
+                else if (AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1].Equals(selectedValue))
                     oneSvnAddKey.ResolveConflictWay = ResolveConflictWays.UseSvn;
                 else
                 {
@@ -295,13 +434,94 @@ namespace LangTextTools
                     {
                         if (commitResult == false)
                         {
-                            MessageBox.Show("执行提交操作失败", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show(string.Concat("执行提交操作失败，原因为", svnException.Message), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                             return;
                         }
                         else
                         {
-                            MessageBox.Show(string.Concat("执行提交操作成功\n\n自己修改的原始本地表备份至：", backupFilePath), "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            return;
+                            string commitExcelFileSuccessTips = string.Format("执行提交操作成功，自己修改的原始本地表备份至：{0}\n\n", backupFilePath);
+                            // 如果选择了一并导出、提交主语言对应的lang文件
+                            if (!AppValues.COMMIT_LANG_FILE_OPTINOS[0].Equals(cmbCommitLangFile.SelectedItem.ToString()))
+                            {
+                                // 进行lang文件导出
+                                // 解析Excel母表
+                                LangExcelInfo langExcelInfo = AnalyzeHelper.AnalyzeLangExcelFile(AppValues.LocalExcelFilePath, AppValues.CommentLineStartChar, out errorString);
+                                if (errorString == null)
+                                {
+                                    if (ExportLangFileHelper.ExportLangFile(langExcelInfo, langExcelInfo.DefaultLanguageInfo.Name, exportLangFilePath, keyAndValueSplitChar, out errorString) == true)
+                                    {
+                                        // 提交lang文件
+                                        if (AppValues.COMMIT_LANG_FILE_OPTINOS[2].Equals(cmbCommitLangFile.SelectedItem.ToString()))
+                                        {
+                                            // 先执行Revert和Update操作
+                                            string exportLangFileSuccessTips = string.Format("导出主语言对应的lang文件成功，导出路径为：{0}\n\n", exportLangFilePath);
+                                            bool revertResult = OperateSvnHelper.Revert(exportLangFilePath, out svnException);
+                                            if (svnException == null)
+                                            {
+                                                if (revertResult == false)
+                                                {
+                                                    MessageBox.Show(string.Format("{0}{1}但提交至SVN失败，因为对Working Copy中的lang文件执行Revert失败", commitExcelFileSuccessTips, exportLangFileSuccessTips), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    return;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show(string.Format("{0}{1}但提交至SVN失败，因为对Working Copy中的lang文件执行Revert失败，错误原因为：{2}", commitExcelFileSuccessTips, exportLangFileSuccessTips, svnException.Message), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                return;
+                                            }
+                                            bool updateResult = OperateSvnHelper.Update(exportLangFilePath, out svnException);
+                                            if (svnException == null)
+                                            {
+                                                if (updateResult == false)
+                                                {
+                                                    MessageBox.Show(string.Format("{0}{1}但提交至SVN失败，因为对Working Copy中的lang文件执行Update失败", commitExcelFileSuccessTips, exportLangFileSuccessTips), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                    return;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show(string.Format("{0}{1}但提交至SVN失败，因为对Working Copy中的lang文件执行Update失败，错误原因为：{2}", commitExcelFileSuccessTips, exportLangFileSuccessTips, svnException.Message), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                return;
+                                            }
+                                            // 执行提交操作
+                                            commitResult = OperateSvnHelper.Commit(exportLangFilePath, logMessage, out svnException);
+                                            if (commitResult == true)
+                                            {
+                                                MessageBox.Show(string.Format("{0}{1}提交lang文件至SVN成功", commitExcelFileSuccessTips, exportLangFileSuccessTips), "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                                this.Close();
+                                                return;
+                                            }
+                                            else
+                                            {
+                                                MessageBox.Show(string.Format("{0}{1}但提交至SVN失败，错误原因为{2}", commitExcelFileSuccessTips, exportLangFileSuccessTips, svnException.Message), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                                return;
+                                            }
+                                        }
+                                        else
+                                        {
+                                            MessageBox.Show(string.Format("{0}导出主语言对应的lang文件成功，导出路径为：{1}", commitExcelFileSuccessTips, exportLangFilePath), "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                            this.Close();
+                                            return;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show(string.Format("{0}导出主语言对应的lang文件失败，错误原因为：{1}，请修正后尝试用主界面中的lang文件导出功能手工导出", commitExcelFileSuccessTips, errorString), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        return;
+                                    }
+                                }
+                                else
+                                {
+                                    MessageBox.Show(string.Format("{0}导出主语言对应的lang文件失败，因为解析母表时发现以下错误：{1}，请修正后尝试用主界面中的lang文件导出功能手工导出", commitExcelFileSuccessTips, errorString), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                MessageBox.Show(commitExcelFileSuccessTips, "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                this.Close();
+                                return;
+                            }
                         }
                     }
                     else
@@ -440,9 +660,9 @@ namespace LangTextTools
                     if (isSameValue == true)
                     {
                         if (lastChooseResolveConflictWay == ResolveConflictWays.UseLocal)
-                            dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[0];
+                            dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[0];
                         else
-                            dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                            dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                     }
                     // 两次SVN表主语言译文不同，上次对比后的选择无法沿用需重选，将“SVN表主语言”以及“编号”列的背景设为橙色突出显示
                     else
@@ -460,7 +680,7 @@ namespace LangTextTools
                 {
                     dataGridView.Rows[index].Cells[PART_DIFF_INFO_IS_CHANGED_BY_SVN_REVISION_COLUMN_NAME].Style.BackColor = Color.LightGray;
                     if (hasChooseResolveConflictWay == false)
-                        dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                        dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                 }
             }
 
@@ -508,9 +728,9 @@ namespace LangTextTools
                 if (lastChooseResolveConflictWay != ResolveConflictWays.NotChoose)
                 {
                     if (lastChooseResolveConflictWay == ResolveConflictWays.UseLocal)
-                        dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[0];
+                        dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[0];
                     else
-                        dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                        dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                 }
                 // 对于新的差异项，将“编号”列的单元格设为橙色，提示用户进行处理方式的选择
                 else
@@ -521,7 +741,7 @@ namespace LangTextTools
                 {
                     dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_IS_CHANGED_BY_SVN_REVISION_COLUMN_NAME].Style.BackColor = Color.LightGray;
                     if (lastChooseResolveConflictWay == ResolveConflictWays.NotChoose)
-                        dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                        dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                 }
             }
 
@@ -582,9 +802,9 @@ namespace LangTextTools
                     if (isSameValue == true)
                     {
                         if (lastChooseResolveConflictWay == ResolveConflictWays.UseLocal)
-                            dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[0];
+                            dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[0];
                         else
-                            dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                            dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                     }
                     // 两次SVN表主语言译文不同，上次对比后的选择无法沿用需重选，将“SVN表主语言”以及“编号”列的背景设为橙色突出显示
                     else
@@ -602,7 +822,7 @@ namespace LangTextTools
                 {
                     dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_IS_CHANGED_BY_SVN_REVISION_COLUMN_NAME].Style.BackColor = Color.LightGray;
                     if (hasChooseResolveConflictWay == false)
-                        dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                        dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                 }
             }
 
@@ -700,7 +920,7 @@ namespace LangTextTools
                 if (isChangedBySvnRevision == true)
                 {
                     dataGridView.Rows[index].Cells[PART_DIFF_INFO_IS_CHANGED_BY_SVN_REVISION_COLUMN_NAME].Style.BackColor = Color.LightGray;
-                    dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                    dataGridView.Rows[index].Cells[PART_DIFF_INFO_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                 }
             }
 
@@ -738,7 +958,7 @@ namespace LangTextTools
                 if (isChangedBySvnRevision == true)
                 {
                     dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_IS_CHANGED_BY_SVN_REVISION_COLUMN_NAME].Style.BackColor = Color.LightGray;
-                    dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                    dataGridView.Rows[index].Cells[PART_LOCAL_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                 }
             }
 
@@ -778,7 +998,7 @@ namespace LangTextTools
                 if (isChangedBySvnRevision == true)
                 {
                     dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_IS_CHANGED_BY_SVN_REVISION_COLUMN_NAME].Style.BackColor = Color.LightGray;
-                    dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_WAYS[1];
+                    dataGridView.Rows[index].Cells[PART_SVN_ADD_KEY_RESOLVE_CONFLICT_WAY_COLUMN_NAME].Value = AppValues.RESOLVE_COMMIT_DIFF_OPTINOS[1];
                 }
             }
         }
@@ -849,6 +1069,53 @@ namespace LangTextTools
 
                 DataGridViewComboBoxCell comboBoxCell = dataGridView.Rows[i].Cells[PART_RESOLVE_CONFLICT_WAY_COLUMN_NAME] as DataGridViewComboBoxCell;
                 comboBoxCell.Value = selectedValue;
+            }
+        }
+
+        // 当双击DataGridView中的单元格时触发
+        private void _OnCellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            DataGridView dataGridView = sender as DataGridView;
+            DataGridViewColumn column = dataGridView.Columns[e.ColumnIndex];
+            if (column.GetType() == typeof(DataGridViewTextBoxColumn))
+            {
+                // 如果双击的是“本地表行号”列下的单元格
+                if (column.Name.EndsWith(_LOCAL_LINE_NUM_COLUMN_NAME))
+                {
+                    int lineNum = int.Parse(dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString());
+                    // 因为选中Excel文件中的对应行并在打开时滚动到此行会涉及到Excel文件的修改和保存，为了不对本地表做出改变，需要另建副本后对副本进行操作
+                    string localFileCopyPath = Utils.CombinePath(AppValues.PROGRAM_FOLDER_PATH, string.Format("用于查看定位的本地表副本 {0:yyyy年MM月dd日 HH时mm分ss秒} 对应SVN版本号{1}.xlsx", DateTime.Now, _localExcelInfo.Revision));
+                    try
+                    {
+                        File.Copy(AppValues.LocalExcelFilePath, localFileCopyPath, true);
+                    }
+                    catch (Exception exception)
+                    {
+                        MessageBox.Show(string.Format("建立本地表副本失败，错误原因为：{0}\n\n因为选中Excel文件中的对应行并在打开时滚动到此行会涉及到Excel文件的修改和保存，为了不对本地表做出改变，需要另建副本后对副本进行操作。但建立副本失败，该操作被迫中止", exception.ToString()), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    // 操作Excel文件，对Excel文件中的对应行进行选中并在打开时滚动到此行
+                    string errorString = null;
+                    CommitExcelFileHelper.SetExcelVisibleRow(localFileCopyPath, lineNum, out errorString);
+                    if (string.IsNullOrEmpty(errorString))
+                        System.Diagnostics.Process.Start(localFileCopyPath);
+                    else
+                        MessageBox.Show(string.Format("选中Excel文件中的对应行并在打开时滚动到此行的设置失败，错误原因为：{0}\n\n该操作被迫中止", errorString), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                // 如果双击的是“SVN表行号”列下的单元格
+                else if (column.Name.EndsWith(_SVN_LINE_NUM_COLUMN_NAME))
+                {
+                    int lineNum = int.Parse(dataGridView.Rows[e.RowIndex].Cells[e.ColumnIndex].Value.ToString());
+                    // 操作Excel文件，对Excel文件中的对应行进行选中并在打开时滚动到此行
+                    string errorString = null;
+                    CommitExcelFileHelper.SetExcelVisibleRow(_newestSvnExcelInfo.FilePath, lineNum, out errorString);
+                    if (string.IsNullOrEmpty(errorString))
+                        System.Diagnostics.Process.Start(_newestSvnExcelInfo.FilePath);
+                    else
+                        MessageBox.Show(string.Format("选中Excel文件中的对应行并在打开时滚动到此行的设置失败，错误原因为：{0}\n\n该操作被迫中止", errorString), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                    MessageBox.Show("只有双击“本地表行号”或“SVN表行号”列中的单元格才会打开对应的Excel文件并定位到指定行号", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 

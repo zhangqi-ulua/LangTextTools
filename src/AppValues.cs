@@ -27,12 +27,47 @@ public class AppValues
     /// <summary>
     /// 提交时用于选择处理差异方式的ComboBox选项文字
     /// </summary>
-    public static string[] RESOLVE_COMMIT_DIFF_WAYS = new string[] { "使用本地表", "使用SVN表" };
+    public static string[] RESOLVE_COMMIT_DIFF_OPTINOS = new string[] { "使用本地表", "使用SVN表" };
+
+    /// <summary>
+    /// 提交时是否已经导出提交主语言对应lang文件的ComboBox选项文字
+    /// </summary>
+    public static string[] COMMIT_LANG_FILE_OPTINOS = new string[] { "不导出", "仅导出不提交", "导出并提交" };
 
     /// <summary>
     /// 本工具所在目录，不能用System.Environment.CurrentDirectory因为当本工具被其他程序调用时取得的CurrentDirectory将是调用者的路径
     /// </summary>
     public static string PROGRAM_FOLDER_PATH = System.AppDomain.CurrentDomain.SetupInformation.ApplicationBase;
+
+    /// <summary>
+    /// 与本工具同目录下的配置文件的文件名
+    /// </summary>
+    public const string CONFIG_FILE_NAME = "config.txt";
+
+    // 以下为所有配置项的键名
+    public const string CONFIG_KEY_EXCEL_PATH = "ExcelPath";
+    public const string CONFIG_KEY_COMMENT_LINE_START_CHAR = "CommentLineStartChar";
+    public const string CONFIG_KEY_KEY_VALUE_SPLIT_CHAR = "KeyValueSplitChar";
+    public const string CONFIG_KEY_LANG_FILE_EXTENSION = "LangFileExtension";
+    public const string CONFIG_KEY_IS_EXPORT_UNIFIED_DIR = "IsExportUnifiedDir";
+    public const string CONFIG_KEY_EXPORT_UNIFIED_DIR = "ExportUnifiedDir";
+    public const string CONFIG_KEY_EXPORT_LANG_FILE_START_STRING = "ExportLangFile_";
+    public const string CONFIG_KEY_OLD_EXCEL_PATH = "OldExcelPath";
+    public const string CONFIG_KEY_EXPORT_NEED_TRANSLATE_EXCEL_FILE = "ExportNeedTranslateExcelFile";
+    public const string CONFIG_KEY_COLOR_FOR_ADD = "ColorForAdd";
+    public const string CONFIG_KEY_COLOR_FOR_CHANGE = "ColorForChange";
+    public const string CONFIG_KEY_FILL_NULL_CELL_TEXT = "FillNullCellText";
+    public const string CONFIG_KEY_COMPARED_EXCEL_PATH = "ComparedExcelPath";
+    public const string CONFIG_KEY_TRANSLATED_EXCEL_PATH = "TranslatedExcelPath";
+    public const string CONFIG_KEY_MERGED_EXCEL_PATH = "MergedExcelPath";
+    public const string CONFIG_KEY_LOCAL_EXCEL_FILE_PATH = "LocalExcelFilePath";
+    public const string CONFIG_KEY_COMMIT_LOG_MESSAGE = "CommitLogMessage";
+    public const string CONFIG_KEY_COMMIT_LANG_FILE_PATH = "CommitLangFilePath";
+
+    /// <summary>
+    /// 存储用户在配置文件中声明的配置
+    /// </summary>
+    public static Dictionary<string, string> Config = new Dictionary<string, string>();
 
     /// <summary>
     /// 设置的注释行开头字符
@@ -83,4 +118,14 @@ public class AppValues
     /// SVN中母表文件的路径
     /// </summary>
     public static string SvnExcelFilePath = null;
+
+    /// <summary>
+    /// 左半功能区选择的Excel母表的MD5
+    /// </summary>
+    public static string ExcelMD5 = null;
+
+    /// <summary>
+    /// 右半功能区选择的本地表的MD5
+    /// </summary>
+    public static string LocalExcelMD5 = null;
 }

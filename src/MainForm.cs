@@ -12,9 +12,28 @@ namespace LangTextTools
 {
     public partial class MainForm : Form
     {
+        // “打开母表”按钮悬停时弹出的提示控件
+        private ToolTip openExcelFileButtonToolTip;
+        // “检查本地母表”按钮悬停时弹出的提示控件
+        private ToolTip checkLocalExcelButtonToolTip;
+
         public MainForm()
         {
             InitializeComponent();
+
+            openExcelFileButtonToolTip = new ToolTip();
+            openExcelFileButtonToolTip.AutoPopDelay = 0;
+            openExcelFileButtonToolTip.InitialDelay = 0;
+            openExcelFileButtonToolTip.ReshowDelay = 0;
+            openExcelFileButtonToolTip.AutomaticDelay = 0;
+            openExcelFileButtonToolTip.SetToolTip(btnOpenExcelFile, "注意：一旦点击“打开”按钮，本工具将缓存此时的母表数据，左半区功能使用时都将读取缓存数据。若修改了母表文件内容，必须再次点击“打开”才会刷新数据");
+
+            checkLocalExcelButtonToolTip = new ToolTip();
+            checkLocalExcelButtonToolTip.AutoPopDelay = 0;
+            checkLocalExcelButtonToolTip.InitialDelay = 0;
+            checkLocalExcelButtonToolTip.ReshowDelay = 0;
+            checkLocalExcelButtonToolTip.AutomaticDelay = 0;
+            checkLocalExcelButtonToolTip.SetToolTip(btnCheckLocalExcelFilePath, "注意：一旦点击“检查”按钮，本工具将缓存此时的本地母表数据，使用下面“提交至SVN”功能时将读取缓存数据。若修改了本地母表文件内容，必须再次点击“检查”才会刷新数据");
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -24,6 +43,10 @@ namespace LangTextTools
             // 默认隐藏母表工具部分，并且只有检查过Excel母表文件后，子功能才可以使用
             _ShowExcelFileTools(false);
             _ChangeStateWhenSetLocalExcelPath(false);
+
+            // 加载并呈现默认配置
+            _LoadConfig();
+            _FillTextBoxUseConfig();
         }
 
         // 点击“选择Excel母表”按钮
@@ -72,6 +95,8 @@ namespace LangTextTools
             if (errorString == null)
             {
                 AppValues.ExcelFullPath = Path.GetFullPath(excelFilePath);
+                // 计算文件MD5
+                AppValues.ExcelMD5 = Utils.GetFileMD5(AppValues.ExcelFullPath);
                 // 当重新选择了Excel母表文件后重置窗口控件
                 _ChangeStateWhenSetExcelPath(false);
                 AppValues.LangExcelInfo = langExcelInfo;
@@ -105,6 +130,10 @@ namespace LangTextTools
         // 点击“导出lang文件”按钮
         private void btnExportLangFile_Click(object sender, EventArgs e)
         {
+            // 检查母表文件是否发生变动
+            if (_CheckExcelMD5() == true)
+                return;
+
             // 检查是否输入了Key与Value的分隔字符
             string keyAndValueSplitChar = txtKeyValueSplitChar.Text;
             if (string.IsNullOrEmpty(keyAndValueSplitChar))
@@ -143,6 +172,7 @@ namespace LangTextTools
                     MessageBox.Show("输入的lang文件统一导出路径不存在", "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
+
                 AppValues.ExportLangFileUnifiedDir = unifiedDirPath;
                 ChooseExportLangFileForm chooseForm = new ChooseExportLangFileForm(true);
                 chooseForm.ShowDialog(this);
@@ -250,10 +280,29 @@ namespace LangTextTools
         // 点击“仅导出需要翻译行的Excel文件”按钮
         private void btnGenerateNeedTranslateExcelFile_Click(object sender, EventArgs e)
         {
+            // 检查母表文件是否发生变动
+            if (_CheckExcelMD5() == true)
+                return;
+
             SaveFileDialog dialog = new SaveFileDialog();
             dialog.ValidateNames = true;
             dialog.Title = "请选择保存Excel文件的路径";
             dialog.Filter = "Excel files (*.xlsx)|*.xlsx";
+
+            // 如果输入框中存在保存路径（可能是用户手工输入或从配置文件中读取），则检查无误后作为起始路径和文件名填上
+            string inputSavePath = txtNeedTranslateExcelPath.Text.Trim();
+            if (!string.IsNullOrEmpty(inputSavePath))
+            {
+                if (File.Exists(inputSavePath))
+                {
+                    string fullPath = Path.GetFullPath(inputSavePath);
+                    string dirPath = Path.GetDirectoryName(fullPath);
+                    string fileName = Path.GetFileNameWithoutExtension(fullPath);
+                    dialog.InitialDirectory = dirPath;
+                    dialog.FileName = fileName;
+                }
+            }
+
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 string filePath = dialog.FileName;
@@ -310,6 +359,10 @@ namespace LangTextTools
         // 点击“生成对比Excel文件”按钮
         private void btnGenarateComparedExcelFile_Click(object sender, EventArgs e)
         {
+            // 检查母表文件是否发生变动
+            if (_CheckExcelMD5() == true)
+                return;
+
             // 如果选择的标注新增Key、主语言翻译变动所在行的背景色相同弹出警告对话框
             Color colorForAdd = lblShowColorForAdd.BackColor;
             Color colorForChange = lblShowColorForChange.BackColor;
@@ -331,6 +384,21 @@ namespace LangTextTools
             dialog.ValidateNames = true;
             dialog.Title = "请选择保存Excel文件的路径";
             dialog.Filter = "Excel files (*.xlsx)|*.xlsx";
+
+            // 如果输入框中存在保存路径（可能是用户手工输入或从配置文件中读取），则检查无误后作为起始路径和文件名填上
+            string inputSavePath = txtComparedExcelPath.Text.Trim();
+            if (!string.IsNullOrEmpty(inputSavePath))
+            {
+                if (File.Exists(inputSavePath))
+                {
+                    string fullPath = Path.GetFullPath(inputSavePath);
+                    string dirPath = Path.GetDirectoryName(fullPath);
+                    string fileName = Path.GetFileNameWithoutExtension(fullPath);
+                    dialog.InitialDirectory = dirPath;
+                    dialog.FileName = fileName;
+                }
+            }
+
             if (dialog.ShowDialog() == DialogResult.OK)
             {
                 string filePath = dialog.FileName;
@@ -399,6 +467,10 @@ namespace LangTextTools
         // 点击“合并翻译完的Excel文件”按钮
         private void btnMergeTranslatedExcelFile_Click(object sender, EventArgs e)
         {
+            // 检查母表文件是否发生变动
+            if (_CheckExcelMD5() == true)
+                return;
+
             // 检查是否指定了合法的合并后的Excel文件的保存路径
             string mergedExcelSavePath = txtMergedExcelPath.Text.Trim();
             if (string.IsNullOrEmpty(mergedExcelSavePath))
@@ -612,12 +684,15 @@ namespace LangTextTools
                 {
                     if (localFileState.LocalContentStatus == SvnStatus.Normal || localFileState.LocalContentStatus == SvnStatus.Modified)
                     {
+                        AppValues.LocalExcelFilePath = fileFullPath;
+                        AppValues.SvnExcelFilePath = localFileInfo.Uri.ToString();
+                        // 计算文件MD5
+                        AppValues.LocalExcelMD5 = Utils.GetFileMD5(AppValues.LocalExcelFilePath);
                         _ChangeStateWhenSetLocalExcelPath(true);
                         txtCommentLineStartChar.Enabled = false;
                         // 读取设置的注释行开头字符
                         _SetCommentLineStartChar();
-                        AppValues.LocalExcelFilePath = fileFullPath;
-                        AppValues.SvnExcelFilePath = localFileInfo.Uri.ToString();
+
                     }
                     else
                     {
@@ -880,6 +955,10 @@ namespace LangTextTools
                 return;
             }
 
+            // 检查本地表是否发生变动
+            if (_CheckLocalExcelMD5() == true)
+                return;
+
             // 判断本地表是否相较SVN最新版本发生变动，如果本地就是SVN中最新版本且未进行改动则无需提交
             SvnException svnException = null;
             SvnStatusEventArgs localFileState = OperateSvnHelper.GetLocalFileState(AppValues.LocalExcelFilePath, out svnException);
@@ -990,6 +1069,149 @@ namespace LangTextTools
                 txtLocalExcelFilePath.ReadOnly = false;
                 grpOperateLocalExcelFile.Enabled = false;
             }
+        }
+
+        // 加载配置文件
+        private void _LoadConfig()
+        {
+            string configFilePath = Utils.CombinePath(AppValues.PROGRAM_FOLDER_PATH, AppValues.CONFIG_FILE_NAME);
+            if (File.Exists(configFilePath))
+            {
+                string errorString = null;
+                AppValues.Config = TxtConfigReader.ParseTxtConfigFile(configFilePath, ":", false, false, out errorString);
+                if (!string.IsNullOrEmpty(errorString))
+                    MessageBox.Show(string.Concat("配置文件中存在以下错误，会导致部分配置无效，建议修正后重新打开本工具\n\n", errorString), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // 根据用户配置自动在输入框中填写默认值
+        private void _FillTextBoxUseConfig()
+        {
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_EXCEL_PATH))
+                txtExcelPath.Text = AppValues.Config[AppValues.CONFIG_KEY_EXCEL_PATH];
+            // 注释行开头为一个字符
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_COMMENT_LINE_START_CHAR))
+                txtCommentLineStartChar.Text = AppValues.Config[AppValues.CONFIG_KEY_COMMENT_LINE_START_CHAR][0].ToString();
+            // Key与Value的分隔符为一个字符
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_KEY_VALUE_SPLIT_CHAR))
+                txtKeyValueSplitChar.Text = AppValues.Config[AppValues.CONFIG_KEY_KEY_VALUE_SPLIT_CHAR][0].ToString();
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_LANG_FILE_EXTENSION))
+                txtLangFileExtension.Text = AppValues.Config[AppValues.CONFIG_KEY_LANG_FILE_EXTENSION];
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_EXPORT_UNIFIED_DIR))
+                txtExportUnifiedDirPath.Text = AppValues.Config[AppValues.CONFIG_KEY_EXPORT_UNIFIED_DIR];
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_OLD_EXCEL_PATH))
+                txtOldExcelPath.Text = AppValues.Config[AppValues.CONFIG_KEY_OLD_EXCEL_PATH];
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_FILL_NULL_CELL_TEXT))
+                txtFillNullCellText.Text = AppValues.Config[AppValues.CONFIG_KEY_FILL_NULL_CELL_TEXT];
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_TRANSLATED_EXCEL_PATH))
+                txtTranslatedExcelPath.Text = AppValues.Config[AppValues.CONFIG_KEY_TRANSLATED_EXCEL_PATH];
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_MERGED_EXCEL_PATH))
+                txtMergedExcelPath.Text = AppValues.Config[AppValues.CONFIG_KEY_MERGED_EXCEL_PATH];
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_LOCAL_EXCEL_FILE_PATH))
+                txtLocalExcelFilePath.Text = AppValues.Config[AppValues.CONFIG_KEY_LOCAL_EXCEL_FILE_PATH];
+
+            // 两种方式导出对比后的Excel文件，如果有默认路径配置，先填入文本框，点击“保存”按钮弹出选择保存路径对话框时再读取进行起始路径设置
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_EXPORT_NEED_TRANSLATE_EXCEL_FILE))
+                txtNeedTranslateExcelPath.Text = AppValues.Config[AppValues.CONFIG_KEY_EXPORT_NEED_TRANSLATE_EXCEL_FILE];
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_COMPARED_EXCEL_PATH))
+                txtComparedExcelPath.Text = AppValues.Config[AppValues.CONFIG_KEY_COMPARED_EXCEL_PATH];
+
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_IS_EXPORT_UNIFIED_DIR))
+            {
+                string inputData = AppValues.Config[AppValues.CONFIG_KEY_IS_EXPORT_UNIFIED_DIR];
+                if ("true".Equals(inputData, StringComparison.CurrentCultureIgnoreCase))
+                    rdoExportUnifiedDir.Checked = true;
+                else if ("false".Equals(inputData, StringComparison.CurrentCultureIgnoreCase))
+                    rdoExportDifferentDir.Checked = true;
+                else
+                    MessageBox.Show(string.Concat(AppValues.CONFIG_KEY_IS_EXPORT_UNIFIED_DIR, "配置项只能填写为true或false，建议修正后重新打开本工具"), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            // 解析并检查两个颜色值设置
+            StringBuilder colorParamErrorStringBuilder = new StringBuilder();
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_COLOR_FOR_ADD))
+            {
+                string colorForAddString = AppValues.Config[AppValues.CONFIG_KEY_COLOR_FOR_ADD];
+                string errorString = null;
+                Color colorForAdd = _AnalyzeColor(colorForAddString, out errorString);
+                if (errorString != null)
+                    colorParamErrorStringBuilder.AppendFormat("用于标识新增Key的颜色设置错误，{0}\n", errorString);
+                else
+                    lblShowColorForAdd.BackColor = colorForAdd;
+            }
+            if (AppValues.Config.ContainsKey(AppValues.CONFIG_KEY_COLOR_FOR_CHANGE))
+            {
+                string colorForChangeString = AppValues.Config[AppValues.CONFIG_KEY_COLOR_FOR_CHANGE];
+                string errorString = null;
+                Color colorForChange = _AnalyzeColor(colorForChangeString, out errorString);
+                if (errorString != null)
+                    colorParamErrorStringBuilder.AppendFormat("用于标识翻译变动Key的颜色设置错误，{0}\n", errorString);
+                else
+                    lblShowColorForChange.BackColor = colorForChange;
+            }
+            string colorParamErrorString = colorParamErrorStringBuilder.ToString();
+            if (!string.IsNullOrEmpty(colorParamErrorString))
+                MessageBox.Show(string.Concat("用于标识对比结果的颜色配置的存在以下错误，建议修正后重新打开本工具\n\n", colorParamErrorString), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        // 解析并检查填写的颜色配置
+        private Color _AnalyzeColor(string colorString, out string errorString)
+        {
+            string[] rgbString = colorString.Trim().Split(new char[] { ',' });
+            if (rgbString.Length != 3)
+            {
+                errorString = "填写格式应为用英文逗号分隔的RGB值";
+                return Color.White;
+            }
+            int[] rgb = new int[3];
+            for (int i = 0; i < 3; ++i)
+            {
+                if (int.TryParse(rgbString[i].Trim(), out rgb[i]) == false)
+                {
+                    errorString = string.Format("填写的RGB值中第{0}个值（{1}）不是合法的数字", i + 1, rgbString[i]);
+                    return Color.White;
+                }
+                else if (rgb[i] < 0 || rgb[i] > 255)
+                {
+                    errorString = string.Format("填写的RGB值中第{0}个值（{1}）非法，必须介于0-255之间", i + 1, rgbString[i]);
+                    return Color.White;
+                }
+            }
+
+            Color color = Color.FromArgb(rgb[0], rgb[1], rgb[2]);
+            errorString = null;
+            return color;
+        }
+
+        /// <summary>
+        /// 每次使用左半功能区时，检查目前指定的母表MD5是否与点击“打开”按钮时相同，如果发生变动，提醒用户重新读取文件。返回true表示文件内容未发生变化，返回false则表示发生了变动
+        /// </summary>
+        private bool _CheckExcelMD5()
+        {
+            string newExcelMD5 = Utils.GetFileMD5(AppValues.ExcelFullPath);
+            if (newExcelMD5 != null && !newExcelMD5.Equals(AppValues.ExcelMD5))
+            {
+                _ChangeStateWhenSetExcelPath(false);
+                MessageBox.Show("检测到目前选择的母表文件与点击“打开”按钮时内容已发生变动，请重新点击“打开”按钮读取最新的母表内容", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return true;
+            }
+            else
+                return false;
+        }
+
+        /// <summary>
+        /// 每次使用右半功能区时，检查目前指定的本地表MD5是否与点击“检查”按钮时相同，如果发生变动，提醒用户重新读取文件。返回true表示文件内容未发生变化，返回false则表示发生了变动
+        /// </summary>
+        private bool _CheckLocalExcelMD5()
+        {
+            string newExcelMD5 = Utils.GetFileMD5(AppValues.LocalExcelFilePath);
+            if (newExcelMD5 != null && !newExcelMD5.Equals(AppValues.LocalExcelMD5))
+            {
+                _ChangeStateWhenSetLocalExcelPath(false);
+                MessageBox.Show("检测到目前选择的本地表文件与点击“检查”按钮时内容已发生变动，请重新点击“检查”按钮读取最新的本地表内容", "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return true;
+            }
+            else
+                return false;
         }
     }
 }

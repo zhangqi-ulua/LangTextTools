@@ -77,6 +77,7 @@
     <Compile Include="ResolveConflictWhenCommitForm.Designer.cs">
       <DependentUpon>ResolveConflictWhenCommitForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="TxtConfigReader.cs" />
     <Compile Include="Utils.cs" />
     <Compile Include="XlsxReader.cs" />
     <EmbeddedResource Include="ChooseExportLangFileForm.resx">

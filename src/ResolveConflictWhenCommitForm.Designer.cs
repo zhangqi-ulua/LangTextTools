@@ -71,6 +71,11 @@
             this.chkSvnAddKeyInfoIgnoreSvnRevisionChange = new System.Windows.Forms.CheckBox();
             this.lblSvnAddKeyInfoUnifiedResolveConflictWay = new System.Windows.Forms.Label();
             this.cmbSvnAddKeyInfoUnifiedResolveConflictWay = new System.Windows.Forms.ComboBox();
+            this.lblOpenAndLocateExcelRowTips = new System.Windows.Forms.Label();
+            this.lblCommitLangFile = new System.Windows.Forms.Label();
+            this.cmbCommitLangFile = new System.Windows.Forms.ComboBox();
+            this.lblKeyValueSplitChar = new System.Windows.Forms.Label();
+            this.txtKeyValueSplitChar = new System.Windows.Forms.TextBox();
             ((System.ComponentModel.ISupportInitialize)(this.dgvDiffDefaultLanguageInfo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvLocalAddKeyInfo)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvSvnAddKeyInfo)).BeginInit();
@@ -112,7 +117,7 @@
             // 
             // btnCommit
             // 
-            this.btnCommit.Location = new System.Drawing.Point(595, 21);
+            this.btnCommit.Location = new System.Drawing.Point(595, 34);
             this.btnCommit.Name = "btnCommit";
             this.btnCommit.Size = new System.Drawing.Size(75, 38);
             this.btnCommit.TabIndex = 4;
@@ -123,7 +128,7 @@
             // lblDiffInfo
             // 
             this.lblDiffInfo.AutoSize = true;
-            this.lblDiffInfo.Location = new System.Drawing.Point(25, 98);
+            this.lblDiffInfo.Location = new System.Drawing.Point(25, 128);
             this.lblDiffInfo.Name = "lblDiffInfo";
             this.lblDiffInfo.Size = new System.Drawing.Size(329, 12);
             this.lblDiffInfo.TabIndex = 5;
@@ -147,7 +152,7 @@
             this.DiffInfoColumnIsChangedBySvnRevision,
             this.DiffInfoColumnResolveConflictWay});
             this.dgvDiffDefaultLanguageInfo.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;
-            this.dgvDiffDefaultLanguageInfo.Location = new System.Drawing.Point(27, 128);
+            this.dgvDiffDefaultLanguageInfo.Location = new System.Drawing.Point(27, 158);
             this.dgvDiffDefaultLanguageInfo.Name = "dgvDiffDefaultLanguageInfo";
             this.dgvDiffDefaultLanguageInfo.RowTemplate.Height = 23;
             this.dgvDiffDefaultLanguageInfo.Size = new System.Drawing.Size(1164, 177);
@@ -209,7 +214,7 @@
             // lblDiffInfoUnifiedResolveConflictWay
             // 
             this.lblDiffInfoUnifiedResolveConflictWay.AutoSize = true;
-            this.lblDiffInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(967, 98);
+            this.lblDiffInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(967, 128);
             this.lblDiffInfoUnifiedResolveConflictWay.Name = "lblDiffInfoUnifiedResolveConflictWay";
             this.lblDiffInfoUnifiedResolveConflictWay.Size = new System.Drawing.Size(125, 12);
             this.lblDiffInfoUnifiedResolveConflictWay.TabIndex = 7;
@@ -219,14 +224,13 @@
             // 
             this.cmbDiffInfoUnifiedResolveConflictWay.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbDiffInfoUnifiedResolveConflictWay.FormattingEnabled = true;
-            this.cmbDiffInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(1098, 95);
+            this.cmbDiffInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(1098, 125);
             this.cmbDiffInfoUnifiedResolveConflictWay.Name = "cmbDiffInfoUnifiedResolveConflictWay";
             this.cmbDiffInfoUnifiedResolveConflictWay.Size = new System.Drawing.Size(93, 20);
             this.cmbDiffInfoUnifiedResolveConflictWay.TabIndex = 8;
             // 
             // lblChangedBySvnRevisionTips
             // 
-            this.lblChangedBySvnRevisionTips.AutoSize = true;
             this.lblChangedBySvnRevisionTips.Location = new System.Drawing.Point(736, 18);
             this.lblChangedBySvnRevisionTips.Name = "lblChangedBySvnRevisionTips";
             this.lblChangedBySvnRevisionTips.Size = new System.Drawing.Size(455, 36);
@@ -255,7 +259,7 @@
             this.chkDiffInfoIgnoreSvnRevisionChange.AutoSize = true;
             this.chkDiffInfoIgnoreSvnRevisionChange.Checked = true;
             this.chkDiffInfoIgnoreSvnRevisionChange.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkDiffInfoIgnoreSvnRevisionChange.Location = new System.Drawing.Point(656, 97);
+            this.chkDiffInfoIgnoreSvnRevisionChange.Location = new System.Drawing.Point(656, 127);
             this.chkDiffInfoIgnoreSvnRevisionChange.Name = "chkDiffInfoIgnoreSvnRevisionChange";
             this.chkDiffInfoIgnoreSvnRevisionChange.Size = new System.Drawing.Size(276, 16);
             this.chkDiffInfoIgnoreSvnRevisionChange.TabIndex = 12;
@@ -265,7 +269,7 @@
             // lblLocalAddKeyInfo
             // 
             this.lblLocalAddKeyInfo.AutoSize = true;
-            this.lblLocalAddKeyInfo.Location = new System.Drawing.Point(25, 330);
+            this.lblLocalAddKeyInfo.Location = new System.Drawing.Point(25, 360);
             this.lblLocalAddKeyInfo.Name = "lblLocalAddKeyInfo";
             this.lblLocalAddKeyInfo.Size = new System.Drawing.Size(281, 12);
             this.lblLocalAddKeyInfo.TabIndex = 13;
@@ -276,7 +280,7 @@
             this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.AutoSize = true;
             this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.Checked = true;
             this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.Location = new System.Drawing.Point(656, 329);
+            this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.Location = new System.Drawing.Point(656, 359);
             this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.Name = "chkLocalAddKeyInfoIgnoreSvnRevisionChange";
             this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.Size = new System.Drawing.Size(276, 16);
             this.chkLocalAddKeyInfoIgnoreSvnRevisionChange.TabIndex = 14;
@@ -286,7 +290,7 @@
             // lblLocalAddKeyInfoUnifiedResolveConflictWay
             // 
             this.lblLocalAddKeyInfoUnifiedResolveConflictWay.AutoSize = true;
-            this.lblLocalAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(967, 330);
+            this.lblLocalAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(967, 360);
             this.lblLocalAddKeyInfoUnifiedResolveConflictWay.Name = "lblLocalAddKeyInfoUnifiedResolveConflictWay";
             this.lblLocalAddKeyInfoUnifiedResolveConflictWay.Size = new System.Drawing.Size(125, 12);
             this.lblLocalAddKeyInfoUnifiedResolveConflictWay.TabIndex = 15;
@@ -296,7 +300,7 @@
             // 
             this.cmbLocalAddKeyInfoUnifiedResolveConflictWay.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbLocalAddKeyInfoUnifiedResolveConflictWay.FormattingEnabled = true;
-            this.cmbLocalAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(1098, 327);
+            this.cmbLocalAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(1098, 357);
             this.cmbLocalAddKeyInfoUnifiedResolveConflictWay.Name = "cmbLocalAddKeyInfoUnifiedResolveConflictWay";
             this.cmbLocalAddKeyInfoUnifiedResolveConflictWay.Size = new System.Drawing.Size(93, 20);
             this.cmbLocalAddKeyInfoUnifiedResolveConflictWay.TabIndex = 16;
@@ -317,7 +321,7 @@
             this.LocalAddKeyColumnIsChangedBySvnRevision,
             this.LocalAddKeyColumnResolveConflictWay});
             this.dgvLocalAddKeyInfo.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;
-            this.dgvLocalAddKeyInfo.Location = new System.Drawing.Point(27, 360);
+            this.dgvLocalAddKeyInfo.Location = new System.Drawing.Point(27, 390);
             this.dgvLocalAddKeyInfo.Name = "dgvLocalAddKeyInfo";
             this.dgvLocalAddKeyInfo.RowTemplate.Height = 23;
             this.dgvLocalAddKeyInfo.Size = new System.Drawing.Size(1164, 177);
@@ -365,7 +369,7 @@
             // lblSvnAddKeyInfo
             // 
             this.lblSvnAddKeyInfo.AutoSize = true;
-            this.lblSvnAddKeyInfo.Location = new System.Drawing.Point(25, 562);
+            this.lblSvnAddKeyInfo.Location = new System.Drawing.Point(25, 592);
             this.lblSvnAddKeyInfo.Name = "lblSvnAddKeyInfo";
             this.lblSvnAddKeyInfo.Size = new System.Drawing.Size(281, 12);
             this.lblSvnAddKeyInfo.TabIndex = 18;
@@ -387,7 +391,7 @@
             this.SvnAddKeyColumnIsChangedBySvnRevision,
             this.SvnAddKeyColumnResolveConflictWay});
             this.dgvSvnAddKeyInfo.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;
-            this.dgvSvnAddKeyInfo.Location = new System.Drawing.Point(27, 592);
+            this.dgvSvnAddKeyInfo.Location = new System.Drawing.Point(27, 622);
             this.dgvSvnAddKeyInfo.Name = "dgvSvnAddKeyInfo";
             this.dgvSvnAddKeyInfo.RowTemplate.Height = 23;
             this.dgvSvnAddKeyInfo.Size = new System.Drawing.Size(1164, 177);
@@ -436,7 +440,7 @@
             this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.AutoSize = true;
             this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.Checked = true;
             this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.Location = new System.Drawing.Point(656, 561);
+            this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.Location = new System.Drawing.Point(656, 591);
             this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.Name = "chkSvnAddKeyInfoIgnoreSvnRevisionChange";
             this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.Size = new System.Drawing.Size(276, 16);
             this.chkSvnAddKeyInfoIgnoreSvnRevisionChange.TabIndex = 20;
@@ -446,7 +450,7 @@
             // lblSvnAddKeyInfoUnifiedResolveConflictWay
             // 
             this.lblSvnAddKeyInfoUnifiedResolveConflictWay.AutoSize = true;
-            this.lblSvnAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(967, 562);
+            this.lblSvnAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(967, 592);
             this.lblSvnAddKeyInfoUnifiedResolveConflictWay.Name = "lblSvnAddKeyInfoUnifiedResolveConflictWay";
             this.lblSvnAddKeyInfoUnifiedResolveConflictWay.Size = new System.Drawing.Size(125, 12);
             this.lblSvnAddKeyInfoUnifiedResolveConflictWay.TabIndex = 21;
@@ -456,16 +460,64 @@
             // 
             this.cmbSvnAddKeyInfoUnifiedResolveConflictWay.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cmbSvnAddKeyInfoUnifiedResolveConflictWay.FormattingEnabled = true;
-            this.cmbSvnAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(1098, 559);
+            this.cmbSvnAddKeyInfoUnifiedResolveConflictWay.Location = new System.Drawing.Point(1098, 589);
             this.cmbSvnAddKeyInfoUnifiedResolveConflictWay.Name = "cmbSvnAddKeyInfoUnifiedResolveConflictWay";
             this.cmbSvnAddKeyInfoUnifiedResolveConflictWay.Size = new System.Drawing.Size(93, 20);
             this.cmbSvnAddKeyInfoUnifiedResolveConflictWay.TabIndex = 22;
+            // 
+            // lblOpenAndLocateExcelRowTips
+            // 
+            this.lblOpenAndLocateExcelRowTips.Location = new System.Drawing.Point(736, 77);
+            this.lblOpenAndLocateExcelRowTips.Name = "lblOpenAndLocateExcelRowTips";
+            this.lblOpenAndLocateExcelRowTips.Size = new System.Drawing.Size(455, 32);
+            this.lblOpenAndLocateExcelRowTips.TabIndex = 23;
+            this.lblOpenAndLocateExcelRowTips.Text = "下列表格中双击“本地表行号”“SVN表行号”列下属的单元格，可直接打开Excel文件并滚动到对应行查看。但注意仅是只读查看，对Excel的修改无效";
+            // 
+            // lblCommitLangFile
+            // 
+            this.lblCommitLangFile.AutoSize = true;
+            this.lblCommitLangFile.Location = new System.Drawing.Point(251, 77);
+            this.lblCommitLangFile.Name = "lblCommitLangFile";
+            this.lblCommitLangFile.Size = new System.Drawing.Size(203, 12);
+            this.lblCommitLangFile.TabIndex = 24;
+            this.lblCommitLangFile.Text = "是否一并提交主语言对应的ang文件：";
+            // 
+            // cmbCommitLangFile
+            // 
+            this.cmbCommitLangFile.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cmbCommitLangFile.FormattingEnabled = true;
+            this.cmbCommitLangFile.Location = new System.Drawing.Point(460, 74);
+            this.cmbCommitLangFile.Name = "cmbCommitLangFile";
+            this.cmbCommitLangFile.Size = new System.Drawing.Size(105, 20);
+            this.cmbCommitLangFile.TabIndex = 25;
+            // 
+            // lblKeyValueSplitChar
+            // 
+            this.lblKeyValueSplitChar.AutoSize = true;
+            this.lblKeyValueSplitChar.Location = new System.Drawing.Point(269, 103);
+            this.lblKeyValueSplitChar.Name = "lblKeyValueSplitChar";
+            this.lblKeyValueSplitChar.Size = new System.Drawing.Size(185, 12);
+            this.lblKeyValueSplitChar.TabIndex = 26;
+            this.lblKeyValueSplitChar.Text = "lang文件Key、Value的分隔字符：";
+            // 
+            // txtKeyValueSplitChar
+            // 
+            this.txtKeyValueSplitChar.Location = new System.Drawing.Point(460, 100);
+            this.txtKeyValueSplitChar.MaxLength = 1;
+            this.txtKeyValueSplitChar.Name = "txtKeyValueSplitChar";
+            this.txtKeyValueSplitChar.Size = new System.Drawing.Size(52, 21);
+            this.txtKeyValueSplitChar.TabIndex = 27;
             // 
             // ResolveConflictWhenCommitForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1219, 794);
+            this.ClientSize = new System.Drawing.Size(1219, 820);
+            this.Controls.Add(this.txtKeyValueSplitChar);
+            this.Controls.Add(this.lblKeyValueSplitChar);
+            this.Controls.Add(this.cmbCommitLangFile);
+            this.Controls.Add(this.lblCommitLangFile);
+            this.Controls.Add(this.lblOpenAndLocateExcelRowTips);
             this.Controls.Add(this.cmbSvnAddKeyInfoUnifiedResolveConflictWay);
             this.Controls.Add(this.lblSvnAddKeyInfoUnifiedResolveConflictWay);
             this.Controls.Add(this.chkSvnAddKeyInfoIgnoreSvnRevisionChange);
@@ -497,6 +549,7 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "请选择要合并到SVN中母表的改动";
+            this.Load += new System.EventHandler(this.ResolveConflictWhenCommitForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.dgvDiffDefaultLanguageInfo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvLocalAddKeyInfo)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.dgvSvnAddKeyInfo)).EndInit();
@@ -550,5 +603,10 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn SvnAddKeyColumnSvnLineNum;
         private System.Windows.Forms.DataGridViewTextBoxColumn SvnAddKeyColumnIsChangedBySvnRevision;
         private System.Windows.Forms.DataGridViewComboBoxColumn SvnAddKeyColumnResolveConflictWay;
+        private System.Windows.Forms.Label lblOpenAndLocateExcelRowTips;
+        private System.Windows.Forms.Label lblCommitLangFile;
+        private System.Windows.Forms.ComboBox cmbCommitLangFile;
+        private System.Windows.Forms.Label lblKeyValueSplitChar;
+        private System.Windows.Forms.TextBox txtKeyValueSplitChar;
     }
 }
