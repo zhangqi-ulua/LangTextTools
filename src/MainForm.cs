@@ -34,6 +34,16 @@ namespace LangTextTools
             checkLocalExcelButtonToolTip.ReshowDelay = 0;
             checkLocalExcelButtonToolTip.AutomaticDelay = 0;
             checkLocalExcelButtonToolTip.SetToolTip(btnCheckLocalExcelFilePath, "注意：一旦点击“检查”按钮，本工具将缓存此时的本地母表数据，使用下面“提交至SVN”功能时将读取缓存数据。若修改了本地母表文件内容，必须再次点击“检查”才会刷新数据");
+
+            // 为输入Excel文件路径的文本框添加拖拽事件
+            txtExcelPath.DragEnter += _OnTextBoxDragEnter;
+            txtExcelPath.DragDrop += _OnTextBoxDragDrop;
+            txtOldExcelPath.DragEnter += _OnTextBoxDragEnter;
+            txtOldExcelPath.DragDrop += _OnTextBoxDragDrop;
+            txtTranslatedExcelPath.DragEnter += _OnTextBoxDragEnter;
+            txtTranslatedExcelPath.DragDrop += _OnTextBoxDragDrop;
+            txtLocalExcelFilePath.DragEnter += _OnTextBoxDragEnter;
+            txtLocalExcelFilePath.DragDrop += _OnTextBoxDragDrop;
         }
 
         private void MainForm_Load(object sender, EventArgs e)
@@ -1180,6 +1190,32 @@ namespace LangTextTools
             Color color = Color.FromArgb(rgb[0], rgb[1], rgb[2]);
             errorString = null;
             return color;
+        }
+
+        // 统一处理通过鼠标将文件拖拽到文本框方式来输入路径的事件
+        private void _OnTextBoxDragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+                e.Effect = DragDropEffects.Link;
+            else
+                e.Effect = DragDropEffects.None;
+        }
+        private void _OnTextBoxDragDrop(object sender, DragEventArgs e)
+        {
+            Array array = (Array)e.Data.GetData(DataFormats.FileDrop);
+            if (array.Length > 1)
+                MessageBox.Show(string.Format("拖拽至输入框中的只能为1个文件，你选择了{0}个文件", array.Length), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            {
+                string excelFilePath = array.GetValue(0).ToString();
+                if (!AppValues.EXCEL_FILE_EXTENSION.Equals(Path.GetExtension(excelFilePath)))
+                    MessageBox.Show(string.Format("拖拽至输入框中的必须是扩展名为{0}的Excel文件", AppValues.EXCEL_FILE_EXTENSION), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                else
+                {
+                    TextBox textBox = sender as TextBox;
+                    textBox.Text = excelFilePath;
+                }
+            }
         }
 
         /// <summary>

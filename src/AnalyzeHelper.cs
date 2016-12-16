@@ -90,6 +90,13 @@ public class AnalyzeHelper
             }
             else
             {
+                for (int i = 0; i < languageInfoList.Count; ++i)
+                {
+                    LanguageInfo languageInfo = languageInfoList[i];
+                    string inputData = dataTable.Rows[dataIndex][languageInfo.ColumnIndex - 1].ToString();
+                    languageInfo.Data.Add(inputData);
+                }
+
                 // 如果Key列值出现重复错误进行记录
                 if (keyDict.ContainsKey(keyString))
                 {
@@ -111,12 +118,7 @@ public class AnalyzeHelper
                     keys.Add(keyString);
                     keyDict.Add(keyString, dataIndex + 1);
                     langExcelInfo.KeyToDataIndex.Add(keyString, dataIndex - AppValues.EXCEL_NAME_ROW_INDEX);
-                    for (int i = 0; i < languageInfoList.Count; ++i)
-                    {
-                        LanguageInfo languageInfo = languageInfoList[i];
-                        string inputData = dataTable.Rows[dataIndex][languageInfo.ColumnIndex - 1].ToString();
-                        languageInfo.Data.Add(inputData);
-                    }
+
                     // 检查主语言必须含有翻译
                     LanguageInfo defaultLanguageInfo = languageInfoList[0];
                     if (string.IsNullOrEmpty(defaultLanguageInfo.Data[dataIndex - AppValues.EXCEL_NAME_ROW_INDEX].ToString()))

@@ -103,6 +103,7 @@
             // 
             // txtExcelPath
             // 
+            this.txtExcelPath.AllowDrop = true;
             this.txtExcelPath.Location = new System.Drawing.Point(125, 18);
             this.txtExcelPath.Name = "txtExcelPath";
             this.txtExcelPath.Size = new System.Drawing.Size(262, 21);
@@ -425,6 +426,7 @@
             // 
             // txtOldExcelPath
             // 
+            this.txtOldExcelPath.AllowDrop = true;
             this.txtOldExcelPath.Location = new System.Drawing.Point(111, 23);
             this.txtOldExcelPath.Name = "txtOldExcelPath";
             this.txtOldExcelPath.Size = new System.Drawing.Size(250, 21);
@@ -524,6 +526,7 @@
             // 
             // txtTranslatedExcelPath
             // 
+            this.txtTranslatedExcelPath.AllowDrop = true;
             this.txtTranslatedExcelPath.Location = new System.Drawing.Point(111, 24);
             this.txtTranslatedExcelPath.Name = "txtTranslatedExcelPath";
             this.txtTranslatedExcelPath.Size = new System.Drawing.Size(191, 21);
@@ -569,6 +572,7 @@
             // 
             // txtLocalExcelFilePath
             // 
+            this.txtLocalExcelFilePath.AllowDrop = true;
             this.txtLocalExcelFilePath.Location = new System.Drawing.Point(606, 50);
             this.txtLocalExcelFilePath.Name = "txtLocalExcelFilePath";
             this.txtLocalExcelFilePath.Size = new System.Drawing.Size(439, 21);
