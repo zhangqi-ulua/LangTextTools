@@ -84,6 +84,7 @@
             this.btnRevertAndUpdateLocalExcelFile = new System.Windows.Forms.Button();
             this.btnGetLocalExcelFileState = new System.Windows.Forms.Button();
             this.btnOpenLocalExcelFile = new System.Windows.Forms.Button();
+            this.chkIsCreateMergeReport = new System.Windows.Forms.CheckBox();
             this.grpExportLangFile.SuspendLayout();
             this.grpCompare.SuspendLayout();
             this.grpExportComparedExcelFile.SuspendLayout();
@@ -461,6 +462,7 @@
             // 
             // grpMerger
             // 
+            this.grpMerger.Controls.Add(this.chkIsCreateMergeReport);
             this.grpMerger.Controls.Add(this.btnGenerateMergedExcelPath);
             this.grpMerger.Controls.Add(this.txtMergedExcelPath);
             this.grpMerger.Controls.Add(this.lblMergedExcelPath);
@@ -470,14 +472,14 @@
             this.grpMerger.Controls.Add(this.lblTranslatedExcelPath);
             this.grpMerger.Location = new System.Drawing.Point(26, 547);
             this.grpMerger.Name = "grpMerger";
-            this.grpMerger.Size = new System.Drawing.Size(500, 103);
+            this.grpMerger.Size = new System.Drawing.Size(500, 110);
             this.grpMerger.TabIndex = 7;
             this.grpMerger.TabStop = false;
             this.grpMerger.Text = "合并功能（复制最新母表，并将翻译完的Excel表中的外语与其合并）";
             // 
             // btnGenerateMergedExcelPath
             // 
-            this.btnGenerateMergedExcelPath.Location = new System.Drawing.Point(307, 61);
+            this.btnGenerateMergedExcelPath.Location = new System.Drawing.Point(307, 63);
             this.btnGenerateMergedExcelPath.Margin = new System.Windows.Forms.Padding(2);
             this.btnGenerateMergedExcelPath.Name = "btnGenerateMergedExcelPath";
             this.btnGenerateMergedExcelPath.Size = new System.Drawing.Size(54, 23);
@@ -488,7 +490,7 @@
             // 
             // txtMergedExcelPath
             // 
-            this.txtMergedExcelPath.Location = new System.Drawing.Point(111, 64);
+            this.txtMergedExcelPath.Location = new System.Drawing.Point(111, 66);
             this.txtMergedExcelPath.Margin = new System.Windows.Forms.Padding(2);
             this.txtMergedExcelPath.Name = "txtMergedExcelPath";
             this.txtMergedExcelPath.Size = new System.Drawing.Size(191, 21);
@@ -497,7 +499,7 @@
             // lblMergedExcelPath
             // 
             this.lblMergedExcelPath.AutoSize = true;
-            this.lblMergedExcelPath.Location = new System.Drawing.Point(16, 61);
+            this.lblMergedExcelPath.Location = new System.Drawing.Point(16, 63);
             this.lblMergedExcelPath.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.lblMergedExcelPath.Name = "lblMergedExcelPath";
             this.lblMergedExcelPath.Size = new System.Drawing.Size(89, 24);
@@ -651,11 +653,23 @@
             this.btnOpenLocalExcelFile.UseVisualStyleBackColor = true;
             this.btnOpenLocalExcelFile.Click += new System.EventHandler(this.btnOpenLocalExcelFile_Click);
             // 
+            // chkIsCreateMergeReport
+            // 
+            this.chkIsCreateMergeReport.AutoSize = true;
+            this.chkIsCreateMergeReport.Checked = true;
+            this.chkIsCreateMergeReport.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkIsCreateMergeReport.Location = new System.Drawing.Point(387, 79);
+            this.chkIsCreateMergeReport.Name = "chkIsCreateMergeReport";
+            this.chkIsCreateMergeReport.Size = new System.Drawing.Size(96, 16);
+            this.chkIsCreateMergeReport.TabIndex = 6;
+            this.chkIsCreateMergeReport.Text = "生成合并报告";
+            this.chkIsCreateMergeReport.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1084, 669);
+            this.ClientSize = new System.Drawing.Size(1084, 673);
             this.Controls.Add(this.grpOperateLocalExcelFile);
             this.Controls.Add(this.btnCheckLocalExcelFilePath);
             this.Controls.Add(this.btnChooseLocalExcelPath);
@@ -751,6 +765,7 @@
         private System.Windows.Forms.Button btnGetLocalExcelFileState;
         private System.Windows.Forms.Button btnOpenLocalExcelFile;
         private System.Windows.Forms.Button btnCommit;
+        private System.Windows.Forms.CheckBox chkIsCreateMergeReport;
     }
 }
 

@@ -351,7 +351,7 @@ public class ExportExcelFileHelper
     /// <summary>
     /// 复制最新母表，将翻译完的Excel文件内容与之合并，并将合并结果报告写入新建的Excel文件中
     /// </summary>
-    public static bool ExportMergedExcelFile(string mergedExcelSavePath, string reportExcelSavePath, LangExcelInfo langExcelInfo, LangExcelInfo translatedLangExcelInfo, List<string> mergeLanguageNames, out string errorString)
+    public static bool ExportMergedExcelFile(string mergedExcelSavePath, string reportExcelSavePath, LangExcelInfo langExcelInfo, LangExcelInfo translatedLangExcelInfo, List<string> mergeLanguageNames, bool isCreateMergeReport, out string errorString)
     {
         int languageCount = mergeLanguageNames.Count;
         // 记录合并翻译时发现的新版母表与翻译完的Excel文件中Key相同但主语言翻译不同信息
@@ -411,18 +411,11 @@ public class ExportExcelFileHelper
         }
 
         // 还要新建一张新表，保存合并报告
-        Excel.Application reportApplication = new Excel.Application();
-        reportApplication.Visible = false;
-        reportApplication.DisplayAlerts = false;
-        reportApplication.ScreenUpdating = false;
-        reportApplication.AlertBeforeOverwriting = false;
-        // 新建Excel工作簿
-        Excel.Workbook reportWorkbook = reportApplication.Workbooks.Add();
-        // 在名为合并报告的Sheet表中填充数据
-        Excel.Worksheet reportWorksheet = reportWorkbook.Sheets[1] as Excel.Worksheet;
-        reportWorksheet.Name = "合并报告";
-        // 设置表格中所有单元格均为文本格式
-        reportWorksheet.Cells.NumberFormatLocal = "@";
+        Excel.Application reportApplication = null;
+        Excel.Workbook reportWorkbook = null;
+        Excel.Worksheet reportWorksheet = null;
+        // 当前报告Excel表中下一个可用空行的行号（从1开始计）
+        int nextCellLineNum = 3;
         // 报告Excel文件中依次按Key与主语言译文均相同、Key相同但主语言译文不同、母表不存在指定Key分成三部分进行报告
         // 不同部分之间隔开的行数
         const int SPACE_LINE_COUNT = 3;
@@ -432,20 +425,36 @@ public class ExportExcelFileHelper
         const int ALL_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX = 3;
         const int ALL_SAME_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX = 4;
         const int ALL_SAME_OTHER_LANGUAGE_START_COLUMN_INDEX = 5;
-        // 每个部分首行写入说明文字
-        reportWorksheet.Cells[1, 1] = "以下为已合并的译文报告，其中用无色背景标识两表译文相同的单元格，用绿色背景标识母表未翻译而翻译完的Excel文件中新增译文的单元格，用黄色背景标识译文不同的单元格（并以批注形式写入母表中旧的译文）";
-        // 写入Key与主语言译文均相同部分的列标题说明
-        reportWorksheet.Cells[2, ALL_SAME_KEY_COLUMN_INDEX] = "Key名";
-        reportWorksheet.Cells[2, ALL_SAME_FILE_LINE_NUM_COLUMN_INDEX] = "母表中的行号";
-        reportWorksheet.Cells[2, ALL_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = "翻译完的Excel表中的行号";
-        reportWorksheet.Cells[2, ALL_SAME_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "主语言译文";
-        for (int i = 0; i < languageCount; ++i)
+
+        if (isCreateMergeReport == true)
         {
-            int columnIndex = ALL_SAME_OTHER_LANGUAGE_START_COLUMN_INDEX + i;
-            reportWorksheet.Cells[2, columnIndex] = mergeLanguageNames[i];
+            reportApplication = new Excel.Application();
+            reportApplication.Visible = false;
+            reportApplication.DisplayAlerts = false;
+            reportApplication.ScreenUpdating = false;
+            reportApplication.AlertBeforeOverwriting = false;
+
+            // 新建Excel工作簿
+            reportWorkbook = reportApplication.Workbooks.Add();
+            // 在名为合并报告的Sheet表中填充数据
+            reportWorksheet = reportWorkbook.Sheets[1] as Excel.Worksheet;
+            reportWorksheet.Name = "合并报告";
+            // 设置表格中所有单元格均为文本格式
+            reportWorksheet.Cells.NumberFormatLocal = "@";
+            // 每个部分首行写入说明文字
+            reportWorksheet.Cells[1, 1] = "以下为已合并的译文报告，其中用无色背景标识两表译文相同的单元格，用绿色背景标识母表未翻译而翻译完的Excel文件中新增译文的单元格，用黄色背景标识译文不同的单元格（并以批注形式写入母表中旧的译文）";
+            // 写入Key与主语言译文均相同部分的列标题说明
+            reportWorksheet.Cells[2, ALL_SAME_KEY_COLUMN_INDEX] = "Key名";
+            reportWorksheet.Cells[2, ALL_SAME_FILE_LINE_NUM_COLUMN_INDEX] = "母表中的行号";
+            reportWorksheet.Cells[2, ALL_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = "翻译完的Excel表中的行号";
+            reportWorksheet.Cells[2, ALL_SAME_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "主语言译文";
+            for (int i = 0; i < languageCount; ++i)
+            {
+                int columnIndex = ALL_SAME_OTHER_LANGUAGE_START_COLUMN_INDEX + i;
+                reportWorksheet.Cells[2, columnIndex] = mergeLanguageNames[i];
+            }
         }
-        // 当前报告Excel表中下一个可用空行的行号（从1开始计）
-        int nextCellLineNum = 3;
+
         // 逐行读取翻译完的Excel表中的内容并与最新母表比较，若Key相同主语言翻译相同，直接将翻译完的Excel表中对应的外语译文合并到母表，若Key相同但主语言翻译不同或者翻译完的Excel表中存在母表中已没有的Key则不合并且记入报告
         int translatedExcelDataCount = translatedLangExcelInfo.Keys.Count;
         for (int i = 0; i < translatedExcelDataCount; ++i)
@@ -479,11 +488,14 @@ public class ExportExcelFileHelper
                     // 存在不同的译文，则要合并到母表中并记入报告
                     if (isAllSame == false)
                     {
-                        reportWorksheet.Cells[nextCellLineNum, ALL_SAME_KEY_COLUMN_INDEX] = mergedExcelKey;
-                        reportWorksheet.Cells[nextCellLineNum, ALL_SAME_FILE_LINE_NUM_COLUMN_INDEX] = excelDataIndex + AppValues.EXCEL_DATA_START_INDEX;
-                        reportWorksheet.Cells[nextCellLineNum, ALL_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = i + AppValues.EXCEL_DATA_START_INDEX;
-                        reportWorksheet.Cells[nextCellLineNum, ALL_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = i + AppValues.EXCEL_DATA_START_INDEX;
-                        reportWorksheet.Cells[nextCellLineNum, ALL_SAME_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = translatedExcelDefaultLanguageValue;
+                        if (isCreateMergeReport == true)
+                        {
+                            reportWorksheet.Cells[nextCellLineNum, ALL_SAME_KEY_COLUMN_INDEX] = mergedExcelKey;
+                            reportWorksheet.Cells[nextCellLineNum, ALL_SAME_FILE_LINE_NUM_COLUMN_INDEX] = excelDataIndex + AppValues.EXCEL_DATA_START_INDEX;
+                            reportWorksheet.Cells[nextCellLineNum, ALL_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = i + AppValues.EXCEL_DATA_START_INDEX;
+                            reportWorksheet.Cells[nextCellLineNum, ALL_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = i + AppValues.EXCEL_DATA_START_INDEX;
+                            reportWorksheet.Cells[nextCellLineNum, ALL_SAME_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = translatedExcelDefaultLanguageValue;
+                        }
 
                         for (int j = 0; j < languageCount; ++j)
                         {
@@ -492,22 +504,27 @@ public class ExportExcelFileHelper
                             string translatedLanguageValue = translatedLangExcelInfo.OtherLanguageInfo[languageName].Data[i];
                             int columnIndex = ALL_SAME_OTHER_LANGUAGE_START_COLUMN_INDEX + j;
                             // 报告中外语列单元格都要写入翻译完的Excel文件中对应的译文
-                            reportWorksheet.Cells[nextCellLineNum, columnIndex] = translatedLanguageValue;
+                            if (isCreateMergeReport == true)
+                                reportWorksheet.Cells[nextCellLineNum, columnIndex] = translatedLanguageValue;
+
                             if (!excelLanguageValue.Equals(translatedLanguageValue))
                             {
                                 int mergedExcelRowIndex = excelDataIndex + AppValues.EXCEL_DATA_START_INDEX;
                                 int mergedExcelColumnIndex = langExcelInfo.OtherLanguageInfo[languageName].ColumnIndex;
 
-                                if (string.IsNullOrEmpty(excelLanguageValue))
+                                if (isCreateMergeReport == true)
                                 {
-                                    // 母表中原来没有译文，则将报告Excel表中对应单元格背景色设为绿色
-                                    reportWorksheet.get_Range(reportWorksheet.Cells[nextCellLineNum, columnIndex], reportWorksheet.Cells[nextCellLineNum, columnIndex]).Interior.ColorIndex = 4;
-                                }
-                                else
-                                {
-                                    // 母表中和翻译完的Excel表中译文不同，则用黄色背景标识译文不同的单元格（并以批注形式写入母表中旧的译文）
-                                    reportWorksheet.get_Range(reportWorksheet.Cells[nextCellLineNum, columnIndex], reportWorksheet.Cells[nextCellLineNum, columnIndex]).Interior.ColorIndex = 6;
-                                    reportWorksheet.get_Range(reportWorksheet.Cells[nextCellLineNum, columnIndex], reportWorksheet.Cells[nextCellLineNum, columnIndex]).AddComment(string.Concat("母表中旧的译文：", System.Environment.NewLine, excelLanguageValue));
+                                    if (string.IsNullOrEmpty(excelLanguageValue))
+                                    {
+                                        // 母表中原来没有译文，则将报告Excel表中对应单元格背景色设为绿色
+                                        reportWorksheet.get_Range(reportWorksheet.Cells[nextCellLineNum, columnIndex], reportWorksheet.Cells[nextCellLineNum, columnIndex]).Interior.ColorIndex = 4;
+                                    }
+                                    else
+                                    {
+                                        // 母表中和翻译完的Excel表中译文不同，则用黄色背景标识译文不同的单元格（并以批注形式写入母表中旧的译文）
+                                        reportWorksheet.get_Range(reportWorksheet.Cells[nextCellLineNum, columnIndex], reportWorksheet.Cells[nextCellLineNum, columnIndex]).Interior.ColorIndex = 6;
+                                        reportWorksheet.get_Range(reportWorksheet.Cells[nextCellLineNum, columnIndex], reportWorksheet.Cells[nextCellLineNum, columnIndex]).AddComment(string.Concat("母表中旧的译文：", System.Environment.NewLine, excelLanguageValue));
+                                    }
                                 }
 
                                 // 将翻译完的Excel表中的译文写入母表
@@ -543,91 +560,96 @@ public class ExportExcelFileHelper
                 differentKeyInfo.Add(info);
             }
         }
-        // 设置框线及标题行格式
-        _FormatPart(reportWorksheet, 1, nextCellLineNum - 1, ALL_SAME_OTHER_LANGUAGE_START_COLUMN_INDEX + languageCount - 1);
 
-        // Key相同但主语言译文不同的报告部分，列依次为Key名、母表行号、翻译完的Excel文件中的行号、母表中主语言译文、翻译完的Excel文件中主语言译文
-        const int KEY_SAME_KEY_COLUMN_INDEX = 1;
-        const int KEY_SAME_FILE_LINE_NUM_COLUMN_INDEX = 2;
-        const int KEY_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX = 3;
-        const int KEY_SAME_EXCEL_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX = 4;
-        const int KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX = 5;
-        if (differentDefaultLanguageInfo.Count > 0)
+        if (isCreateMergeReport == true)
         {
-            nextCellLineNum = nextCellLineNum + SPACE_LINE_COUNT;
-            partStartRowIndexList.Add(nextCellLineNum);
-            // 每个部分首行写入说明文字
-            reportWorksheet.Cells[nextCellLineNum, 1] = "以下为母表与翻译完的Excel表中Key相同但主语言译文不同，无法进行合并的信息";
-            ++nextCellLineNum;
-            // 写入Key相同但主语言译文不同部分的列标题说明
-            reportWorksheet.Cells[nextCellLineNum, KEY_SAME_KEY_COLUMN_INDEX] = "Key名";
-            reportWorksheet.Cells[nextCellLineNum, KEY_SAME_FILE_LINE_NUM_COLUMN_INDEX] = "母表中的行号";
-            reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = "翻译完的Excel表中的行号";
-            reportWorksheet.Cells[nextCellLineNum, KEY_SAME_EXCEL_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "母表中主语言译文";
-            reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "翻译完的Excel文件中主语言译文";
-            ++nextCellLineNum;
-            // 将所有Key相同但主语言译文不同信息写入报告
-            foreach (MergedResultDifferentDefaultLanguageInfo info in differentDefaultLanguageInfo)
+            // 设置框线及标题行格式
+            _FormatPart(reportWorksheet, 1, nextCellLineNum - 1, ALL_SAME_OTHER_LANGUAGE_START_COLUMN_INDEX + languageCount - 1);
+
+            // Key相同但主语言译文不同的报告部分，列依次为Key名、母表行号、翻译完的Excel文件中的行号、母表中主语言译文、翻译完的Excel文件中主语言译文
+            const int KEY_SAME_KEY_COLUMN_INDEX = 1;
+            const int KEY_SAME_FILE_LINE_NUM_COLUMN_INDEX = 2;
+            const int KEY_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX = 3;
+            const int KEY_SAME_EXCEL_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX = 4;
+            const int KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX = 5;
+            if (differentDefaultLanguageInfo.Count > 0)
             {
-                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_KEY_COLUMN_INDEX] = info.Key;
-                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_FILE_LINE_NUM_COLUMN_INDEX] = info.ExcelLineNum;
-                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = info.TranslatedExcelLineNum;
-                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_EXCEL_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = info.ExcelDefaultLanguageValue;
-                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = info.TranslatedExcelDefaultLanguageValue;
-
+                nextCellLineNum = nextCellLineNum + SPACE_LINE_COUNT;
+                partStartRowIndexList.Add(nextCellLineNum);
+                // 每个部分首行写入说明文字
+                reportWorksheet.Cells[nextCellLineNum, 1] = "以下为母表与翻译完的Excel表中Key相同但主语言译文不同，无法进行合并的信息";
                 ++nextCellLineNum;
-            }
-        }
-        // 设置框线及标题行格式
-        _FormatPart(reportWorksheet, partStartRowIndexList[1], nextCellLineNum - 1, KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX);
+                // 写入Key相同但主语言译文不同部分的列标题说明
+                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_KEY_COLUMN_INDEX] = "Key名";
+                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_FILE_LINE_NUM_COLUMN_INDEX] = "母表中的行号";
+                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = "翻译完的Excel表中的行号";
+                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_EXCEL_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "母表中主语言译文";
+                reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "翻译完的Excel文件中主语言译文";
+                ++nextCellLineNum;
+                // 将所有Key相同但主语言译文不同信息写入报告
+                foreach (MergedResultDifferentDefaultLanguageInfo info in differentDefaultLanguageInfo)
+                {
+                    reportWorksheet.Cells[nextCellLineNum, KEY_SAME_KEY_COLUMN_INDEX] = info.Key;
+                    reportWorksheet.Cells[nextCellLineNum, KEY_SAME_FILE_LINE_NUM_COLUMN_INDEX] = info.ExcelLineNum;
+                    reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = info.TranslatedExcelLineNum;
+                    reportWorksheet.Cells[nextCellLineNum, KEY_SAME_EXCEL_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = info.ExcelDefaultLanguageValue;
+                    reportWorksheet.Cells[nextCellLineNum, KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = info.TranslatedExcelDefaultLanguageValue;
 
-        // 母表不存在指定Key的报告部分，列依次为Key名、翻译完的Excel文件中的行号以及主语言译文
-        const int KEY_DIFFERENT_KEY_COLUMN_INDEX = 1;
-        const int KEY_DIFFERENT_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX = 2;
-        const int KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX = 3;
-        if (differentKeyInfo.Count > 0)
-        {
-            nextCellLineNum = nextCellLineNum + SPACE_LINE_COUNT;
-            partStartRowIndexList.Add(nextCellLineNum);
-            // 每个部分首行写入说明文字
-            reportWorksheet.Cells[nextCellLineNum, 1] = "以下为翻译完的Excel文件含有但母表已经没有的Key，无法进行合并的信息";
-            ++nextCellLineNum;
-            // 写入母表中已没有的Key部分的列标题说明
-            reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_KEY_COLUMN_INDEX] = "Key名";
-            reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = "翻译完的Excel表中的行号";
-            reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "翻译完的Excel文件中主语言译文";
-            ++nextCellLineNum;
-            // 将所有母表中已没有的Key信息写入报告
-            foreach (MergedResultDifferentKeyInfo info in differentKeyInfo)
+                    ++nextCellLineNum;
+                }
+            }
+
+            // 设置框线及标题行格式
+            _FormatPart(reportWorksheet, partStartRowIndexList[1], nextCellLineNum - 1, KEY_SAME_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX);
+
+            // 母表不存在指定Key的报告部分，列依次为Key名、翻译完的Excel文件中的行号以及主语言译文
+            const int KEY_DIFFERENT_KEY_COLUMN_INDEX = 1;
+            const int KEY_DIFFERENT_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX = 2;
+            const int KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX = 3;
+            if (differentKeyInfo.Count > 0)
             {
-                reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_KEY_COLUMN_INDEX] = info.Key;
-                reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = info.TranslatedExcelLineNum;
-                reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = info.TranslatedExcelDefaultLanguageValue;
-
+                nextCellLineNum = nextCellLineNum + SPACE_LINE_COUNT;
+                partStartRowIndexList.Add(nextCellLineNum);
+                // 每个部分首行写入说明文字
+                reportWorksheet.Cells[nextCellLineNum, 1] = "以下为翻译完的Excel文件含有但母表已经没有的Key，无法进行合并的信息";
                 ++nextCellLineNum;
+                // 写入母表中已没有的Key部分的列标题说明
+                reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_KEY_COLUMN_INDEX] = "Key名";
+                reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = "翻译完的Excel表中的行号";
+                reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = "翻译完的Excel文件中主语言译文";
+                ++nextCellLineNum;
+                // 将所有母表中已没有的Key信息写入报告
+                foreach (MergedResultDifferentKeyInfo info in differentKeyInfo)
+                {
+                    reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_KEY_COLUMN_INDEX] = info.Key;
+                    reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_FILE_LINE_NUM_COLUMN_INDEX] = info.TranslatedExcelLineNum;
+                    reportWorksheet.Cells[nextCellLineNum, KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX] = info.TranslatedExcelDefaultLanguageValue;
+
+                    ++nextCellLineNum;
+                }
             }
+            // 设置框线及标题行格式
+            _FormatPart(reportWorksheet, partStartRowIndexList[2], nextCellLineNum - 1, KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX);
+
+            // 美化生成的Excel文件
+            _BeautifyExcelWorksheet(reportWorksheet, 40, nextCellLineNum - 1);
+
+            // 因为Excel中执行过合并的单元格即便设置了自动换行也无法实现效果，故为了防止每个部分首行的描述文字不完全可见，手工修改其行高
+            for (int i = 0; i < partStartRowIndexList.Count; ++i)
+            {
+                int partStartRowIndex = partStartRowIndexList[i];
+                reportWorksheet.get_Range("A" + partStartRowIndex).EntireRow.RowHeight = 80;
+            }
+
+            // 保存报告Excel文件
+            reportWorksheet.SaveAs(reportExcelSavePath);
+            reportWorkbook.SaveAs(reportExcelSavePath);
+            // 关闭Excel
+            reportWorkbook.Close(false);
+            reportApplication.Workbooks.Close();
+            reportApplication.Quit();
+            Utils.KillExcelProcess(reportApplication);
         }
-        // 设置框线及标题行格式
-        _FormatPart(reportWorksheet, partStartRowIndexList[2], nextCellLineNum - 1, KEY_DIFFERENT_TRANSLATED_DEFAULT_LANGUAGE_VALUE_COLUMN_INDEX);
-
-        // 美化生成的Excel文件
-        _BeautifyExcelWorksheet(reportWorksheet, 40, nextCellLineNum - 1);
-
-        // 因为Excel中执行过合并的单元格即便设置了自动换行也无法实现效果，故为了防止每个部分首行的描述文字不完全可见，手工修改其行高
-        for (int i = 0; i < partStartRowIndexList.Count; ++i)
-        {
-            int partStartRowIndex = partStartRowIndexList[i];
-            reportWorksheet.get_Range("A" + partStartRowIndex).EntireRow.RowHeight = 80;
-        }
-
-        // 保存报告Excel文件
-        reportWorksheet.SaveAs(reportExcelSavePath);
-        reportWorkbook.SaveAs(reportExcelSavePath);
-        // 关闭Excel
-        reportWorkbook.Close(false);
-        reportApplication.Workbooks.Close();
-        reportApplication.Quit();
-        Utils.KillExcelProcess(reportApplication);
 
         // 保存合并后的Excel文件
         mergedDataWorksheet.SaveAs(mergedExcelSavePath);

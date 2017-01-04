@@ -562,13 +562,21 @@ namespace LangTextTools
                 return;
             }
             // 检查完毕执行合并功能并生成合并结果报告文件（保存路径与合并后的Excel文件相同）
+            bool isCreateMergeReport = chkIsCreateMergeReport.Checked;
             string reportExcelSavePath = Utils.CombinePath(Path.GetDirectoryName(mergedExcelSavePath), string.Format("合并报告 {0:yyyy年MM月dd日 HH时mm分ss秒}.xlsx", DateTime.Now));
-            ExportExcelFileHelper.ExportMergedExcelFile(mergedExcelSavePath, reportExcelSavePath, AppValues.LangExcelInfo, translatedExcelInfo, translatedExcelFileOtherLanguageNames, out errorString);
+            ExportExcelFileHelper.ExportMergedExcelFile(mergedExcelSavePath, reportExcelSavePath, AppValues.LangExcelInfo, translatedExcelInfo, translatedExcelFileOtherLanguageNames, isCreateMergeReport, out errorString);
             if (errorString == null)
             {
-                DialogResult dialogResult = MessageBox.Show(string.Format("合并操作成功\n合并后的Excel文件存储路径为{0}\n报告文件存储路径为{1}\n\n点击“确定”按钮后将自动打开此报告文件", mergedExcelSavePath, reportExcelSavePath), "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                if (dialogResult == DialogResult.OK)
-                    System.Diagnostics.Process.Start(reportExcelSavePath);
+                string tips = string.Concat("合并操作成功\n合并后的Excel文件存储路径为", mergedExcelSavePath);
+                if (isCreateMergeReport == true)
+                {
+                    tips = string.Concat(tips, "\n报告文件存储路径为", reportExcelSavePath, "\n\n点击“确定”按钮后将自动打开此报告文件");
+                    DialogResult dialogResult = MessageBox.Show(tips, "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if (dialogResult == DialogResult.OK)
+                        System.Diagnostics.Process.Start(reportExcelSavePath);
+                }
+                else
+                    MessageBox.Show(tips, "恭喜", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
