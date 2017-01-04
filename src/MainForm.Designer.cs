@@ -66,6 +66,7 @@
             this.lblCommentLineStartChar = new System.Windows.Forms.Label();
             this.txtCommentLineStartChar = new System.Windows.Forms.TextBox();
             this.grpMerger = new System.Windows.Forms.GroupBox();
+            this.chkIsCreateMergeReport = new System.Windows.Forms.CheckBox();
             this.btnGenerateMergedExcelPath = new System.Windows.Forms.Button();
             this.txtMergedExcelPath = new System.Windows.Forms.TextBox();
             this.lblMergedExcelPath = new System.Windows.Forms.Label();
@@ -84,7 +85,6 @@
             this.btnRevertAndUpdateLocalExcelFile = new System.Windows.Forms.Button();
             this.btnGetLocalExcelFileState = new System.Windows.Forms.Button();
             this.btnOpenLocalExcelFile = new System.Windows.Forms.Button();
-            this.chkIsCreateMergeReport = new System.Windows.Forms.CheckBox();
             this.grpExportLangFile.SuspendLayout();
             this.grpCompare.SuspendLayout();
             this.grpExportComparedExcelFile.SuspendLayout();
@@ -477,6 +477,18 @@
             this.grpMerger.TabStop = false;
             this.grpMerger.Text = "合并功能（复制最新母表，并将翻译完的Excel表中的外语与其合并）";
             // 
+            // chkIsCreateMergeReport
+            // 
+            this.chkIsCreateMergeReport.AutoSize = true;
+            this.chkIsCreateMergeReport.Checked = true;
+            this.chkIsCreateMergeReport.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkIsCreateMergeReport.Location = new System.Drawing.Point(387, 79);
+            this.chkIsCreateMergeReport.Name = "chkIsCreateMergeReport";
+            this.chkIsCreateMergeReport.Size = new System.Drawing.Size(96, 16);
+            this.chkIsCreateMergeReport.TabIndex = 6;
+            this.chkIsCreateMergeReport.Text = "生成合并报告";
+            this.chkIsCreateMergeReport.UseVisualStyleBackColor = true;
+            // 
             // btnGenerateMergedExcelPath
             // 
             this.btnGenerateMergedExcelPath.Location = new System.Drawing.Point(307, 63);
@@ -653,18 +665,6 @@
             this.btnOpenLocalExcelFile.UseVisualStyleBackColor = true;
             this.btnOpenLocalExcelFile.Click += new System.EventHandler(this.btnOpenLocalExcelFile_Click);
             // 
-            // chkIsCreateMergeReport
-            // 
-            this.chkIsCreateMergeReport.AutoSize = true;
-            this.chkIsCreateMergeReport.Checked = true;
-            this.chkIsCreateMergeReport.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkIsCreateMergeReport.Location = new System.Drawing.Point(387, 79);
-            this.chkIsCreateMergeReport.Name = "chkIsCreateMergeReport";
-            this.chkIsCreateMergeReport.Size = new System.Drawing.Size(96, 16);
-            this.chkIsCreateMergeReport.TabIndex = 6;
-            this.chkIsCreateMergeReport.Text = "生成合并报告";
-            this.chkIsCreateMergeReport.UseVisualStyleBackColor = true;
-            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
@@ -689,7 +689,7 @@
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "国际化文本工具 1.5   by 张齐";
+            this.Text = "国际化文本工具 1.6   by 张齐";
             this.Load += new System.EventHandler(this.MainForm_Load);
             this.grpExportLangFile.ResumeLayout(false);
             this.grpExportLangFile.PerformLayout();
