@@ -143,7 +143,7 @@ public class AnalyzeHelper
             for (int i = 0; i < notTranslatedRowIndex.Count; ++i)
             {
                 int rowIndex = notTranslatedRowIndex[i];
-                string key = keys[rowIndex - AppValues.EXCEL_DATA_START_INDEX - 1];
+                string key = keys[rowIndex];
                 errorStringBuilder.AppendFormat("第{0}行（Key名为\"{1}\"）", rowIndex + 1, key).AppendLine();
             }
         }
