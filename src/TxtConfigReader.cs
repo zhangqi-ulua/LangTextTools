@@ -31,7 +31,7 @@ public class TxtConfigReader
                     errorStringBuilder.AppendFormat("第{0}行（内容为：{1}）不包含分隔符{2}\n", lineNumber, line, separator);
                     continue;
                 }
-                // 获取Key
+                // 获取key
                 string key = line.Substring(0, separatorIndex);
                 if (string.IsNullOrEmpty(key))
                 {
@@ -43,8 +43,8 @@ public class TxtConfigReader
                     errorStringBuilder.AppendFormat("第{0}行中的key({1})重复定义\n", lineNumber, key);
                     continue;
                 }
-                // 获取Value，进行替换是因为StreamReader读取文件时自动将\n替换为了\\n，故需要进行还原
-                string value = line.Substring(separatorIndex + 1).Replace("\\n", "\n");
+                // 获取value
+                string value = line.Substring(separatorIndex + 1);
                 if (string.IsNullOrEmpty(value))
                 {
                     if (isWarnNullValue == true)
